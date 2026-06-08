@@ -1,0 +1,44 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Secrets / local config
+.env
+config.local.json
+config.json
+settings.json
+naver_cookies.json
+credentials.json
+token.json
+token_monitor.json
+monitor_db.json
+*service_account*.json
+*key*.json
+!config/.env.example
+
+# Data / outputs
+data/
+output/
+outputs/
+logs/
+작업 내역/
+회원목록/
+등급변경/
+*.csv
+*.tsv
+*.xlsx
+
+# Build artifacts
+build/
+dist/
+dist_new/
+_build_v2_work/
+_build_v2_dist/
+*.spec
+*.exe

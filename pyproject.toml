@@ -1,0 +1,16 @@
+
+[project]
+name = "naver-cafe-strategy-tool"
+version = "0.1.0"
+description = "Reusable Naver Cafe crawling, marketing analysis, and operation automation modules"
+requires-python = ">=3.10"
+dependencies = [
+  "requests>=2.31",
+  "selenium>=4.20",
+  "gspread>=6.0",
+  "google-auth>=2.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
