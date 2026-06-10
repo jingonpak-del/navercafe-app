@@ -1,29 +1,55 @@
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .venv/
 venv/
+*.egg-info/
+build/
+dist/
+
+# Secrets / local config
 .env
 .env.*
 !.env.example
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.ruff_cache/
-
-# Local credentials / crawling outputs
 config.local.json
+config.json
+settings.json
 cookies*.json
+naver_cookies.json
 credentials*.json
+credentials.json
 token*.json
+token.json
+token_monitor.json
+monitor_db.json
+*service_account*.json
+*key*.json
+!config/.env.example
+
+# Data / outputs
+data/
 output/
 outputs/
 downloads/
-*.xlsx
+logs/
+작업 내역/
+회원목록/
+등급변경/
 *.csv
+*.tsv
+*.xlsx
 *.db
 *.sqlite
+
+# Build artifacts
+dist_new/
+_build_v2_work/
+_build_v2_dist/
+*.spec
+*.exe
 
 # OS / IDE
 .DS_Store

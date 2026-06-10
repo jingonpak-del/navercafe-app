@@ -1,0 +1,110 @@
+[
+  {
+    "original_filename": "04_member_search.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_014182b05f76_04_member_search.py",
+    "project_path": "src/naver_cafe_strategy/cafe/member_search.py",
+    "bytes": 5962
+  },
+  {
+    "original_filename": "module_01_webdriver.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_03e65e132c98_module_01_webdriver.py",
+    "project_path": "src/naver_cafe_strategy/browser/webdriver.py",
+    "bytes": 5070
+  },
+  {
+    "original_filename": "module_04_exposure_check.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_10c4783f02dc_module_04_exposure_check.py",
+    "project_path": "src/naver_cafe_strategy/naver/exposure_check.py",
+    "bytes": 5517
+  },
+  {
+    "original_filename": "빌드_게시글크롤러.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_34657fca233e_빌드_게시글크롤러.py",
+    "project_path": "legacy/build_scripts/빌드_게시글크롤러.py",
+    "bytes": 3279
+  },
+  {
+    "original_filename": "module_02_google_sheet.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_4d5aa45d399c_module_02_google_sheet.py",
+    "project_path": "src/naver_cafe_strategy/google/sheets.py",
+    "bytes": 9501
+  },
+  {
+    "original_filename": "01_naver_login.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_58eea24f9c17_01_naver_login.py",
+    "project_path": "src/naver_cafe_strategy/auth/naver_login.py",
+    "bytes": 6365
+  },
+  {
+    "original_filename": "module_06_naver_type.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_5fdda5d0fe2c_module_06_naver_type.py",
+    "project_path": "src/naver_cafe_strategy/naver/naver_type.py",
+    "bytes": 7654
+  },
+  {
+    "original_filename": "03_cafe_info.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_6a554c1cead0_03_cafe_info.py",
+    "project_path": "src/naver_cafe_strategy/cafe/cafe_info.py",
+    "bytes": 5531
+  },
+  {
+    "original_filename": "05_grade_change.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_707e97cbd000_05_grade_change.py",
+    "project_path": "src/naver_cafe_strategy/cafe/grade_change.py",
+    "bytes": 6658
+  },
+  {
+    "original_filename": "00_main_example.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_77de418ca204_00_main_example.py",
+    "project_path": "examples/member_grade_change_example.py",
+    "bytes": 5760
+  },
+  {
+    "original_filename": "module_03_naver_search_volume.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_8780a352c578_module_03_naver_search_volume.py",
+    "project_path": "src/naver_cafe_strategy/naver/search_volume.py",
+    "bytes": 5848
+  },
+  {
+    "original_filename": "module_07_result_types.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_8aa255ca5d52_module_07_result_types.py",
+    "project_path": "src/naver_cafe_strategy/naver/result_types.py",
+    "bytes": 7078
+  },
+  {
+    "original_filename": "메인프로그램.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_92e1bfd9f4dd_메인프로그램.py",
+    "project_path": "legacy/crawler_gui/메인프로그램.py",
+    "bytes": 37022
+  },
+  {
+    "original_filename": "빌드_카페게시판게시글크롤러_v2.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_9727612e0639_빌드_카페게시판게시글크롤러_v2.py",
+    "project_path": "legacy/build_scripts/빌드_카페게시판게시글크롤러_v2.py",
+    "bytes": 10193
+  },
+  {
+    "original_filename": "cafe_marketing_gui.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_9a9cb3f747ce_cafe_marketing_gui.py",
+    "project_path": "apps/cafe_marketing_gui.py",
+    "bytes": 48232
+  },
+  {
+    "original_filename": "06_work_log.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_badf4737db3e_06_work_log.py",
+    "project_path": "src/naver_cafe_strategy/io/work_log.py",
+    "bytes": 6581
+  },
+  {
+    "original_filename": "module_05_cafe_post_info.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_c3d07f3219c6_module_05_cafe_post_info.py",
+    "project_path": "src/naver_cafe_strategy/naver/cafe_post_info.py",
+    "bytes": 6927
+  },
+  {
+    "original_filename": "02_load_settings.py",
+    "source_cache_path": "C:\\Users\\USER\\AppData\\Local\\hermes\\cache\\documents\\doc_faa23e57df58_02_load_settings.py",
+    "project_path": "src/naver_cafe_strategy/io/load_member_tasks.py",
+    "bytes": 5796
+  }
+]
