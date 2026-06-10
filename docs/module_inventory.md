@@ -1,0 +1,17 @@
+# 기능별 모듈 설명
+
+| 기능 | 모듈 | 설명 | 상태 |
+|---|---|---|---|
+| 브라우저 생성 | `navercafe_app.browser` | Chrome WebDriver 생성, `#cafe_main` iframe 컨텍스트 관리 | 구현 |
+| URL 파싱/생성 | `navercafe_app.cafe_urls` | 카페 slug, clubId, menuId, articleId 파싱 및 게시판 URL 생성 | 구현 |
+| 공통 데이터 모델 | `navercafe_app.models` | 게시글, 목록 항목, 댓글, 이미지, 출석 결과 dataclass | 구현 |
+| HTML 파서 | `navercafe_app.parsers` | 제목/조회수/본문/댓글/이미지/목록 파싱 | 구현 + 단위 테스트 |
+| 단일 게시글 크롤링 | `navercafe_app.crawlers.article.ArticleCrawler` | URL 접속, iframe 처리, 제목/본문/조회수/이미지 추출 | 구현 |
+| 게시판 목록 크롤링 | `navercafe_app.crawlers.board.BoardCrawler` | clubId/menuId/page 기반 목록 수집, 공지 제외 | 1차 구현 |
+| 댓글 크롤링 | `navercafe_app.crawlers.comments.CommentCrawler` | 현재 페이지에 노출된 댓글 파싱 | 1차 구현 |
+| 이미지 크롤링 | `navercafe_app.crawlers.images.ImageCrawler` | 이미지 URL 추출 및 다운로드 함수 | 구현 |
+| 출석/활동일 판정 | `navercafe_app.crawlers.attendance` | 날짜 문자열 파싱과 기간 내 활동일 평가 | 유틸 구현 |
+| 검색노출 확인 | 예정: `navercafe_app.search.exposure` | 기존 로컬 코드 기반으로 검색 결과 내 카페글 노출 확인 | TODO |
+| 검색량 조회 | 예정: `navercafe_app.ads.search_volume` | 네이버 검색광고 API 연동 | TODO |
+| Google Sheets | 예정: `navercafe_app.integrations.google_sheets` | 수집 결과/히스토리 저장 | TODO |
+| 관리자 기능 | 예정: `navercafe_app.admin.*` | 회원 검색/등급 변경. 반드시 dry-run과 변경 로그 필요 | 보류 |

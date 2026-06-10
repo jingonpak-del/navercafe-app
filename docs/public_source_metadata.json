@@ -1,0 +1,38 @@
+[
+  {
+    "repo": "rsh1994/naver_cafe_crawl",
+    "url": "https://github.com/rsh1994/naver_cafe_crawl",
+    "license": "none detected",
+    "features": ["board crawl", "date filter", "skip notice", "xlsx export"]
+  },
+  {
+    "repo": "kisoo95/Naver-cafe-crawling-ver240115",
+    "url": "https://github.com/kisoo95/Naver-cafe-crawling-ver240115",
+    "license": "none detected",
+    "features": ["keyword search crawl", "page crawl"]
+  },
+  {
+    "repo": "ryanproback/naver-cafe-image-crawler",
+    "url": "https://github.com/ryanproback/naver-cafe-image-crawler",
+    "license": "none detected",
+    "features": ["image extraction", "download"]
+  },
+  {
+    "repo": "dev-jaemin/Naver-Cafe-Crawling",
+    "url": "https://github.com/dev-jaemin/Naver-Cafe-Crawling",
+    "license": "none detected",
+    "features": ["comments", "question-answer rows", "postgres"]
+  },
+  {
+    "repo": "GBS-Skile/NaverCafeAttendanceCrawler",
+    "url": "https://github.com/GBS-Skile/NaverCafeAttendanceCrawler",
+    "license": "MIT",
+    "features": ["member attendance/activity dates"]
+  },
+  {
+    "repo": "sirius-mhlee/naver-cafe-crawler",
+    "url": "https://github.com/sirius-mhlee/naver-cafe-crawler",
+    "license": "none detected",
+    "features": ["selenium bs4 pipeline", "pandas output"]
+  }
+]
