@@ -201,58 +201,108 @@ def _section_text(anchor) -> str:
     return ""
 
 
+def _build_search_content_item(anchor, *, rank: int) -> SearchContentItem | None:
+    """링크 1개를 검색 결과 아이템으로 변환합니다."""
+
+    href = anchor.get("href", "").strip()
+    ctype = content_type_from_url(href)
+    if not ctype:
+        return None
+
+    parsed = urlparse(href)
+    if parsed.path in _NAVER_UTILITY_PATHS:
+        return None
+
+    section = _section_text(anchor)
+    if is_excluded_section_text(section):
+        return None
+
+    normalized_url = normalize_naver_url(href)
+    block = _nearest_search_block(anchor)
+    title = anchor.get_text(" ", strip=True)
+    if not title or len(title) < 2:
+        # 같은 블록 안에서 가장 제목처럼 보이는 링크 텍스트를 보조로 사용
+        for candidate in block.select("a[href]"):
+            candidate_text = candidate.get_text(" ", strip=True)
+            if candidate_text and len(candidate_text) > len(title):
+                title = candidate_text
+    if not title or title in {"내 블로그", "가입한 카페", "블로그", "카페"}:
+        return None
+    if title.isdigit() or title.startswith("RE"):
+        return None
+
+    snippet = block.get_text(" ", strip=True)
+    if snippet.startswith(title):
+        snippet = snippet[len(title):].strip()
+    return SearchContentItem(
+        content_type=ctype,
+        url=normalized_url,
+        title=title,
+        snippet=snippet,
+        rank=rank,
+    )
+
+
+def _extract_first_item_from_result_card(card, *, rank: int) -> SearchContentItem | None:
+    """검색 결과 카드 하나에서 가장 위의 대표 게시글 1건만 추출합니다.
+
+    네이버 VIEW/인기글 결과는 하나의 노출 카드 안에 대표글, 본문 미리보기 링크,
+    댓글 링크, 관련/추가글 링크가 함께 들어올 수 있습니다. SEO 분석 기준의 1페이지
+    노출 원고는 카드 최상단 대표글이므로 카드 내부에서는 첫 번째 유효 게시글만 반환합니다.
+    """
+
+    for anchor in card.select("a[href]"):
+        item = _build_search_content_item(anchor, rank=rank)
+        if item is not None:
+            return item
+    return None
+
+
+def _result_cards(soup: BeautifulSoup) -> list:
+    """네이버 검색 결과에서 개별 노출 카드 후보를 반환합니다."""
+
+    cards = soup.select("._fe_view_power_content, ._fe_view_po")
+
+    unique_cards = []
+    seen_ids: set[int] = set()
+    for card in cards:
+        obj_id = id(card)
+        if obj_id not in seen_ids:
+            unique_cards.append(card)
+            seen_ids.add(obj_id)
+    return unique_cards
+
+
 def extract_blog_cafe_results_from_html(html: str, *, max_items: int | None = None) -> list[SearchContentItem]:
-    """네이버 검색 결과 HTML에서 블로그/카페 게시글 링크만 추출합니다.
+    """네이버 검색 결과 HTML에서 블로그/카페 대표 게시글 링크만 추출합니다.
 
     광고/플레이스/웹사이트 섹션에 포함된 링크와 네이버 상단 유틸리티 링크는 제외합니다.
+    하나의 검색 결과 카드 안에 여러 게시글 링크가 묶여 있으면 가장 위의 대표글 1건만 수집합니다.
     """
 
     soup = BeautifulSoup(html, "html.parser")
     results: list[SearchContentItem] = []
     seen: set[str] = set()
 
+    cards = _result_cards(soup)
+    if cards:
+        for card in cards:
+            item = _extract_first_item_from_result_card(card, rank=len(results) + 1)
+            if item is None or item.url in seen:
+                continue
+            results.append(item)
+            seen.add(item.url)
+            if max_items is not None and len(results) >= max_items:
+                break
+        return results
+
+    # 예전/테스트 HTML처럼 카드 식별자가 없을 때의 폴백: 링크 단위 추출.
     for anchor in soup.select("a[href]"):
-        href = anchor.get("href", "").strip()
-        ctype = content_type_from_url(href)
-        if not ctype:
+        item = _build_search_content_item(anchor, rank=len(results) + 1)
+        if item is None or item.url in seen:
             continue
-
-        parsed = urlparse(href)
-        if parsed.path in _NAVER_UTILITY_PATHS:
-            continue
-
-        section = _section_text(anchor)
-        if is_excluded_section_text(section):
-            continue
-
-        normalized_url = normalize_naver_url(href)
-        if normalized_url in seen:
-            continue
-
-        block = _nearest_search_block(anchor)
-        title = anchor.get_text(" ", strip=True)
-        if not title or len(title) < 2:
-            # 같은 블록 안에서 가장 제목처럼 보이는 링크 텍스트를 보조로 사용
-            for candidate in block.select("a[href]"):
-                candidate_text = candidate.get_text(" ", strip=True)
-                if candidate_text and len(candidate_text) > len(title):
-                    title = candidate_text
-        if not title or title in {"내 블로그", "가입한 카페", "블로그", "카페"}:
-            continue
-
-        snippet = block.get_text(" ", strip=True)
-        if snippet.startswith(title):
-            snippet = snippet[len(title):].strip()
-        results.append(
-            SearchContentItem(
-                content_type=ctype,
-                url=normalized_url,
-                title=title,
-                snippet=snippet,
-                rank=len(results) + 1,
-            )
-        )
-        seen.add(normalized_url)
+        results.append(item)
+        seen.add(item.url)
         if max_items is not None and len(results) >= max_items:
             break
 

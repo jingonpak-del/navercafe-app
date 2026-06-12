@@ -62,6 +62,42 @@ def test_extract_blog_cafe_results_excludes_ads_place_and_websites():
     assert results[1].rank == 2
 
 
+def test_extract_blog_cafe_results_keeps_only_top_representative_per_result_card():
+    html = """
+    <html><body>
+      <section class="sc_new"><h2>인기글</h2>
+        <div class="sds-comps-vertical-layout _fe_view_po">
+          <a href="https://cafe.naver.com/1sejongcity">세종시닷컴</a>
+          <a href="https://cafe.naver.com/1sejongcity/1958813?art=tracking">부산흥신소 비용 기준</a>
+          <a href="https://cafe.naver.com/1sejongcity/1958813?art=tracking">부산흥신소 비용 기준 본문 미리보기</a>
+          <a href="https://cafe.naver.com/1sejongcity/1952590?art=tracking">부산흥신소 비용 이해는</a>
+          <a href="https://cafe.naver.com/1sejongcity/1951533?art=tracking">부산 흥신소 의뢰결정은</a>
+          <a href="https://cafe.naver.com/1sejongcity/1958813?art=tracking">RE댓글 링크는 제외</a>
+        </div>
+        <div class="sds-comps-vertical-layout _fe_view_po">
+          <a href="https://cafe.naver.com/kig">피터팬의 좋은방 구하기</a>
+          <a href="https://cafe.naver.com/kig/19525501?art=tracking">부산 흥신소 의뢰 비용</a>
+          <a href="https://cafe.naver.com/kig/19525502?art=tracking">같은 카드 추가글</a>
+        </div>
+        <div class="sds-comps-vertical-layout _fe_view_po">
+          <a href="https://blog.naver.com/0557418">고탐정사무소</a>
+          <a href="https://blog.naver.com/0557418/224312791497">부산흥신소 탐정의뢰 처음이라 망설였던 내 이야기</a>
+          <a href="https://blog.naver.com/0557418/224312791498">같은 카드 블로그 추가글</a>
+        </div>
+      </section>
+    </body></html>
+    """
+
+    results = extract_blog_cafe_results_from_html(html)
+
+    assert [(r.content_type, r.url, r.title) for r in results] == [
+        ("cafe", "https://cafe.naver.com/1sejongcity/1958813", "부산흥신소 비용 기준"),
+        ("cafe", "https://cafe.naver.com/kig/19525501", "부산 흥신소 의뢰 비용"),
+        ("blog", "https://blog.naver.com/0557418/224312791497", "부산흥신소 탐정의뢰 처음이라 망설였던 내 이야기"),
+    ]
+    assert all("1952590" not in result.url and "1951533" not in result.url for result in results)
+
+
 def test_parse_blog_detail_html_smart_editor():
     html = """
     <html><body>
