@@ -16,6 +16,7 @@ dist/
 !.env.example
 config.local.json
 config.json
+config/cafe_targets.yaml
 settings.json
 cookies*.json
 naver_cookies.json
