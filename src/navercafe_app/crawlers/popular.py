@@ -190,7 +190,7 @@ class PopularBoardCrawler:
 
 
 def write_popular_rows(
-    rows: list[PopularArticleRow], output_dir: str | Path, encoding: str = "utf-8"
+    rows: list[PopularArticleRow], output_dir: str | Path, encoding: str = "utf-8-sig"
 ) -> tuple[Path, Path]:
     path = Path(output_dir)
     path.mkdir(parents=True, exist_ok=True)

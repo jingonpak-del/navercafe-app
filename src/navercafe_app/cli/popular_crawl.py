@@ -32,7 +32,7 @@ def crawl_popular_urls(
     pages: int = 2,
     output_dir: str | Path = "output/popular",
     headless: bool = True,
-    encoding: str = "utf-8",
+    encoding: str = "utf-8-sig",
 ) -> list[PopularArticleRow]:
     driver = build_driver(headless=headless, disable_images=True, timeout=40)
     rows: list[PopularArticleRow] = []
@@ -57,9 +57,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default="output/popular", help="Output directory for CSV/JSON files")
     parser.add_argument(
         "--encoding",
-        default="utf-8",
+        default="utf-8-sig",
         choices=["utf-8", "utf-8-sig", "cp949"],
-        help="CSV encoding. Use utf-8 for Google Sheets, utf-8-sig/cp949 for Excel troubleshooting.",
+        help="CSV encoding. Default utf-8-sig opens cleanly in Excel; use utf-8 for Google Sheets.",
     )
     parser.add_argument("--headed", action="store_true", help="Run Chrome visibly for debugging")
     return parser
