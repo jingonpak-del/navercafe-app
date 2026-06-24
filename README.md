@@ -69,6 +69,8 @@ python -m pip install -e .
 
 ## 기본 예시
 
+### 단일 게시글 수집
+
 ```python
 from navercafe_app.browser import build_driver
 from navercafe_app.crawlers.article import ArticleCrawler
@@ -80,6 +82,31 @@ try:
 finally:
     driver.quit()
 ```
+
+### 회원전용 게시판 일일 크롤링 MVP
+
+1. `config/.env.example`을 참고해 로컬 `.env`를 만듭니다.
+
+```dotenv
+NAVER_ID=your_naver_id
+NAVER_PW=your_naver_password
+NAVER_SESSION_KEY=local_random_key
+```
+
+2. `config/cafe_targets.example.yaml`을 복사해 `config/cafe_targets.yaml`을 만들고 카페/게시판을 등록합니다.
+
+3. 최초 실행은 CAPTCHA/2FA 대응을 위해 브라우저를 보이게 실행하는 것을 권장합니다.
+
+```bash
+uv run python -m navercafe_app.cli.daily_crawl \
+  --targets config/cafe_targets.yaml \
+  --env .env \
+  --db data/naver_cafe_daily.sqlite \
+  --export output/daily \
+  --headed
+```
+
+로그인 성공 후 쿠키는 `data/session/naver_cookies.json`에 저장되며, 이후 실행에서는 저장 쿠키로 로그인 상태를 먼저 검증합니다. 세션이 만료되거나 CAPTCHA/2FA가 발생하면 `--headed --force-login`으로 수동 갱신하세요.
 
 ## 보안/운영 원칙
 

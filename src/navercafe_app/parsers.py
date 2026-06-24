@@ -5,6 +5,7 @@ from urllib.parse import unquote, urlparse
 
 from bs4 import BeautifulSoup
 
+from .cafe_urls import extract_article_id
 from .models import ArticleListItem, Comment, ImageAsset
 
 
@@ -120,6 +121,7 @@ def parse_board_items(html: str, base_url: str = "https://cafe.naver.com") -> li
             ArticleListItem(
                 title=title,
                 url=href,
+                article_id=extract_article_id(href),
                 view_count=extract_view_count(row_text),
                 comment_count=extract_comment_count(row_text),
                 is_notice="공지" in row_text[:20],

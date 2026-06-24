@@ -1,0 +1,20 @@
+defaults:
+  max_pages_per_board: 3
+  include_comments: true
+  include_images: false
+  since_mode: last_seen_article_id
+  delay_seconds:
+    min: 2
+    max: 5
+
+targets:
+  - name: 샘플카페
+    cafe_url: https://cafe.naver.com/samplecafe
+    cafe_slug: samplecafe
+    cafe_id: "12345678"
+    boards:
+      - name: 자유게시판
+        menu_id: "12"
+        board_url: https://cafe.naver.com/ArticleList.nhn?search.clubid=12345678&search.menuid=12
+      - name: 가입인사
+        menu_id: "34"

@@ -10,6 +10,7 @@ dependencies = [
     "selenium>=4.20",
     "gspread>=6.0",
     "google-auth>=2.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
