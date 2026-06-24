@@ -17,6 +17,7 @@ dist/
 config.local.json
 config.json
 config/cafe_targets.yaml
+config/cafe_popular_targets.txt
 settings.json
 cookies*.json
 naver_cookies.json

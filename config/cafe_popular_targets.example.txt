@@ -1,0 +1,12 @@
+# Naver Cafe popular-list crawl targets
+# One /popular URL per line.
+https://cafe.naver.com/f-e/cafes/14793916/popular
+https://cafe.naver.com/f-e/cafes/10912875/popular
+https://cafe.naver.com/f-e/cafes/29434212/popular
+https://cafe.naver.com/f-e/cafes/10094499/popular
+https://cafe.naver.com/f-e/cafes/12182370/popular
+https://cafe.naver.com/f-e/cafes/23593632/popular
+https://cafe.naver.com/f-e/cafes/20655292/popular
+https://cafe.naver.com/f-e/cafes/10050813/popular
+https://cafe.naver.com/f-e/cafes/23451561/popular
+https://cafe.naver.com/f-e/cafes/22897837/popular
