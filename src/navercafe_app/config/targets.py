@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -34,9 +35,18 @@ class BoardTarget:
     name: str
     menu_id: str = ""
     board_url: str = ""
+    type: str = "board"
     max_pages: int | None = None
     include_comments: bool | None = None
     include_images: bool | None = None
+
+    @property
+    def storage_menu_id(self) -> str:
+        if self.menu_id:
+            return self.menu_id
+        if self.type == "popular":
+            return "__popular__"
+        return "__url__"
 
 
 @dataclass(slots=True)
@@ -73,12 +83,13 @@ def parse_targets(data: dict[str, Any]) -> CrawlTargets:
         parsed = parse_cafe_url(cafe_url) if cafe_url else None
         if not cafe_slug and parsed:
             cafe_slug = parsed.cafe_slug
-        cafe_id = str(item.get("cafe_id") or (parsed.club_id if parsed else "") or "").strip()
+        cafe_id = str(item.get("cafe_id") or (parsed.club_id if parsed else "") or _cafe_id_from_fe_url(cafe_url) or "").strip()
         boards: list[BoardTarget] = []
         for board in item.get("boards") or []:
             if not isinstance(board, dict):
                 raise ValueError("Each board must be a mapping.")
             board_url = str(board.get("board_url") or "").strip()
+            board_type = str(board.get("type") or _infer_board_type(board_url)).strip().lower()
             menu_id = str(board.get("menu_id") or _menu_id_from_url(board_url) or "").strip()
             if not menu_id and not board_url:
                 raise ValueError(f"Board target needs menu_id or board_url: {item.get('name')}")
@@ -87,6 +98,7 @@ def parse_targets(data: dict[str, Any]) -> CrawlTargets:
                     name=str(board.get("name") or menu_id or board_url),
                     menu_id=menu_id,
                     board_url=board_url,
+                    type=board_type,
                     max_pages=_optional_int(board.get("max_pages")),
                     include_comments=_optional_bool(board.get("include_comments")),
                     include_images=_optional_bool(board.get("include_images")),
@@ -142,6 +154,17 @@ def _menu_id_from_url(url: str) -> str:
         if query.get(key):
             return query[key][0]
     return ""
+
+
+def _cafe_id_from_fe_url(url: str) -> str:
+    match = re.search(r"/f-e/cafes/(\d+)", url or "")
+    return match.group(1) if match else ""
+
+
+def _infer_board_type(url: str) -> str:
+    if re.search(r"/f-e/cafes/\d+/popular(?:[/?#]|$)", url or ""):
+        return "popular"
+    return "board"
 
 
 def _optional_int(value: Any) -> int | None:

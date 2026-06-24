@@ -49,5 +49,9 @@ def make_board_url(club_id: str, menu_id: str, page: int = 1) -> str:
 
 
 def extract_article_id(text: str) -> str:
-    match = re.search(r"/(\d+)(?:[?#]|$)", text) or re.search(r"articleid[=:/](\d+)", text, re.I)
+    match = (
+        re.search(r"/articles/(\d+)(?:[?#/]|$)", text, re.I)
+        or re.search(r"/(\d+)(?:[?#]|$)", text)
+        or re.search(r"articleid[=:/](\d+)", text, re.I)
+    )
     return match.group(1) if match else ""

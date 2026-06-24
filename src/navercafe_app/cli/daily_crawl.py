@@ -108,9 +108,7 @@ class DailyCrawler:
         return out
 
     def _crawl_board(self, defaults, cafe: CafeTarget, cafe_id: str, board: BoardTarget, result: DailyCrawlResult) -> None:
-        menu_id = board.menu_id
-        if not menu_id:
-            raise ValueError("menu_id is required after target parsing")
+        menu_id = board.storage_menu_id
         self.store.upsert_board(cafe_id, menu_id, board.name, board.board_url)
         max_pages = board.max_pages or defaults.max_pages_per_board
         include_comments = defaults.include_comments if board.include_comments is None else board.include_comments
@@ -118,7 +116,7 @@ class DailyCrawler:
         seen_ids = self.store.get_last_seen_article_ids(cafe_id, menu_id)
 
         for page in range(1, max_pages + 1):
-            items = self.board_crawler.crawl_page(cafe_id, menu_id, page=page)
+            items = self._crawl_board_items(cafe_id, menu_id, board, page)
             result.listed_articles += len(items)
             if not items:
                 break
@@ -174,6 +172,15 @@ class DailyCrawler:
                     result.comments += len(comments)
             delay = random.uniform(defaults.delay_seconds.min, defaults.delay_seconds.max)
             time.sleep(delay)
+
+    def _crawl_board_items(self, cafe_id: str, menu_id: str, board: BoardTarget, page: int) -> list[ArticleListItem]:
+        if board.type == "popular" or (board.board_url and not board.menu_id):
+            # Naver f-e popular pages are special pages, not normal menu boards.
+            # They do not have search.menuid; crawl the rendered URL directly.
+            if page > 1:
+                return []
+            return self.board_crawler.crawl_url(board.board_url)
+        return self.board_crawler.crawl_page(cafe_id, menu_id, page=page)
 
     def _safe_article_detail(self, item: ArticleListItem, include_images: bool = False) -> Article | None:
         try:

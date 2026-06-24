@@ -94,6 +94,8 @@ NAVER_SESSION_KEY=local_random_key
 ```
 
 2. `config/cafe_targets.example.yaml`을 복사해 `config/cafe_targets.yaml`을 만들고 카페/게시판을 등록합니다.
+   - 일반 게시판은 `menu_id`를 입력합니다.
+   - 인기글 영역(`/f-e/cafes/{cafe_id}/popular`)은 `menu_id`가 없으므로 `type: popular`, `menu_id: ""`, `board_url: https://cafe.naver.com/f-e/cafes/{cafe_id}/popular` 형식으로 등록합니다.
 
 3. 최초 실행은 CAPTCHA/2FA 대응을 위해 브라우저를 보이게 실행하는 것을 권장합니다.
 

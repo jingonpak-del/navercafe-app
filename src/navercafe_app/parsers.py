@@ -106,7 +106,7 @@ def parse_board_items(html: str, base_url: str = "https://cafe.naver.com") -> li
     items: list[ArticleListItem] = []
     for row in soup.select("tr, .article-board li, li[class*='article']"):
         link = row.select_one(
-            "a.article, a[href*='/ArticleRead'], a[href*='articleid'], a[href*='cafe.naver.com']"
+            "a.article, a[href*='/ArticleRead'], a[href*='articleid'], a[href*='/articles/'], a[href*='cafe.naver.com']"
         )
         if not link:
             continue

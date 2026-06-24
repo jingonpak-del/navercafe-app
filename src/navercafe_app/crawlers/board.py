@@ -20,6 +20,10 @@ class BoardCrawler:
         self, club_id: str, menu_id: str, page: int = 1, include_notices: bool = False
     ) -> list[ArticleListItem]:
         url = make_board_url(club_id, menu_id, page)
+        return self.crawl_url(url, include_notices=include_notices)
+
+    def crawl_url(self, url: str, include_notices: bool = False) -> list[ArticleListItem]:
+        """Crawl a rendered Naver Cafe list URL, including f-e special pages such as popular."""
         self.driver.get(url)
         WebDriverWait(self.driver, self.timeout).until(lambda d: d.find_elements(By.TAG_NAME, "body"))
         try:
