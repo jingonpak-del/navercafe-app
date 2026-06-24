@@ -48,6 +48,13 @@
 uv run python -m navercafe_app.cli.popular_crawl --pages 2 --output output/popular
 ```
 
+CSV는 Google Sheets 업로드를 우선해 기본 `utf-8`로 저장한다. Excel에서 직접 열어야 해서 글자가 깨지면 `--encoding utf-8-sig` 또는 `--encoding cp949`로 별도 파일을 만든다.
+
+```bash
+uv run python -m navercafe_app.cli.popular_crawl --pages 2 --output output/popular_google --encoding utf-8
+uv run python -m navercafe_app.cli.popular_crawl --pages 2 --output output/popular_excel --encoding utf-8-sig
+```
+
 로컬 URL 파일을 지정해서 수집:
 
 ```bash
@@ -69,9 +76,16 @@ uv run python -m navercafe_app.cli.popular_crawl --pages 2 --headed
    - 10개 카페 × 최대 2페이지 × 페이지당 20개 = 최대 400개 목록 수집.
    - 카페별 실제 페이지 수가 1페이지뿐이면 20개 내외에서 종료한다.
 2. **2차: 공개 게시글 본문 확인**
-   - 목록 CSV의 `url`을 기존 `ArticleCrawler`로 순회한다.
-   - 비회원 공개글은 본문/이미지/댓글까지 저장한다.
-   - 멤버공개/권한제한 글은 `detail_unavailable` 상태로 분류한다.
+   - 목록 CSV의 `url`을 `popular_detail_crawl.py`가 기존 `ArticleCrawler`로 순회한다.
+   - 비회원 공개글은 본문/이미지/댓글 수를 저장한다.
+   - 멤버공개/권한제한 글은 `login_or_member_required` 또는 `detail_unavailable` 상태로 분류한다.
+
+   ```bash
+   uv run python -m navercafe_app.cli.popular_detail_crawl \
+     --source output/popular/naver_cafe_popular_articles.csv \
+     --output output/popular_details \
+     --encoding utf-8
+   ```
 3. **3차: 요약/분류**
    - 제목 기준으로 주제 태그를 부여한다.
    - 댓글 수/조회 수 기준 상위글을 우선 정리한다.

@@ -189,13 +189,15 @@ class PopularBoardCrawler:
         return False
 
 
-def write_popular_rows(rows: list[PopularArticleRow], output_dir: str | Path) -> tuple[Path, Path]:
+def write_popular_rows(
+    rows: list[PopularArticleRow], output_dir: str | Path, encoding: str = "utf-8"
+) -> tuple[Path, Path]:
     path = Path(output_dir)
     path.mkdir(parents=True, exist_ok=True)
     csv_path = path / "naver_cafe_popular_articles.csv"
     json_path = path / "naver_cafe_popular_articles.json"
     fieldnames = list(PopularArticleRow.__dataclass_fields__.keys())
-    with csv_path.open("w", newline="", encoding="utf-8-sig") as f:
+    with csv_path.open("w", newline="", encoding=encoding) as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
