@@ -4,7 +4,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal
 
 import requests
 
@@ -14,6 +14,7 @@ from .session_store import SessionStore
 
 NAVER_HOME_URL = "https://www.naver.com/"
 NAVER_MAIL_URL = "https://mail.naver.com/"
+NAVER_MAIL_INIT_DATA_URL = "https://mail.naver.com/json/initData"
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
@@ -25,6 +26,48 @@ class AuthState:
     logged_in: bool
     source: str
     message: str = ""
+
+
+SessionValidationStatus = Literal["valid", "expired", "challenge", "unknown"]
+
+
+@dataclass(slots=True)
+class SessionValidationResult:
+    status: SessionValidationStatus
+    message: str = ""
+
+    @property
+    def is_valid(self) -> bool:
+        return self.status == "valid"
+
+
+def validate_naver_mail_session(session: requests.Session, timeout: int = 10) -> SessionValidationResult:
+    """Validate Naver cookies through the same mail initData family observed in legacy apps."""
+    try:
+        resp = session.post(NAVER_MAIL_INIT_DATA_URL, timeout=timeout, allow_redirects=True)
+    except requests.RequestException as exc:
+        return SessionValidationResult("unknown", f"mail initData 요청 실패: {exc}")
+
+    text = resp.text[:4000]
+    current_url = resp.url.lower()
+    if "nidlogin" in current_url or "로그인" in text and "id=" in text:
+        return SessionValidationResult("expired", "로그인 페이지로 리다이렉트되었습니다.")
+    if any(marker in text for marker in ("captcha", "보호조치", "본인확인", "인증")):
+        return SessionValidationResult("challenge", "인증/보호조치 응답이 감지되었습니다.")
+
+    try:
+        payload = resp.json()
+    except ValueError:
+        payload = None
+    if isinstance(payload, dict):
+        if payload.get("userIdNo") or payload.get("userId") or payload.get("email"):
+            return SessionValidationResult("valid", "mail initData 응답에서 로그인 사용자를 확인했습니다.")
+        if str(payload.get("result", "")).upper() == "FAIL" or str(payload.get("message", "")).strip():
+            return SessionValidationResult("expired", str(payload.get("message") or "mail initData 실패 응답"))
+
+    if resp.status_code < 500 and any(cookie.name in {"NID_AUT", "NID_SES"} for cookie in session.cookies):
+        return SessionValidationResult("valid", "Naver 인증 쿠키와 mail 응답 상태를 확인했습니다.")
+    return SessionValidationResult("unknown", f"판별 불가 응답(status={resp.status_code})")
 
 
 def load_env_file(path: str | os.PathLike[str] | None) -> dict[str, str]:
@@ -154,6 +197,11 @@ class NaverSessionManager:
                     pass
 
     def validate_session(self, session: requests.Session) -> bool:
+        result = validate_naver_mail_session(session)
+        if result.status in {"valid", "expired", "challenge"}:
+            return result.is_valid
+
+        # Fallback for transient mail endpoint changes: visit the mailbox shell and detect redirects.
         try:
             resp = session.get(NAVER_MAIL_URL, timeout=10, allow_redirects=True)
         except requests.RequestException:
@@ -180,6 +228,6 @@ class NaverSessionManager:
 
     @staticmethod
     def _default_login_func(driver, username: str, password: str) -> bool:
-        from naver_cafe_strategy.auth.naver_login import naver_login
+        from navercafe_app.auth.naver_login import safe_naver_login
 
-        return naver_login(driver, username, password)
+        return safe_naver_login(driver, username, password)
