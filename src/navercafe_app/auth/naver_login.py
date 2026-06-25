@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import Literal
 
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -46,8 +46,19 @@ class LoginStateDetector:
 
         bad_credential_elements = driver.find_elements(By.ID, "err_common")
         if bad_credential_elements:
-            message = " ".join(element.text.strip() for element in bad_credential_elements if element.text.strip())
-            return LoginState("bad_credentials", message or "ID/PW 오류 메시지가 표시되었습니다.")
+            messages: list[str] = []
+            for element in bad_credential_elements:
+                try:
+                    if not element.is_displayed():
+                        continue
+                    text = element.text.strip()
+                except StaleElementReferenceException:
+                    continue
+                if text:
+                    messages.append(text)
+            if messages:
+                message = " ".join(messages)
+                return LoginState("bad_credentials", message)
 
         security_selectors = [
             (By.CSS_SELECTOR, "div.protection_content"),

@@ -7,8 +7,12 @@ from navercafe_app.auth.naver_session import validate_naver_mail_session
 
 
 class FakeElement:
-    def __init__(self, text: str = ""):
+    def __init__(self, text: str = "", displayed: bool = True):
         self.text = text
+        self._displayed = displayed
+
+    def is_displayed(self) -> bool:
+        return self._displayed
 
 
 class FakeDriver:
@@ -53,6 +57,16 @@ def test_login_state_detector_logged_in_by_cookie() -> None:
     driver = FakeDriver(cookies=[{"name": "NID_AUT"}])
 
     assert detector.detect(driver).kind == "logged_in"
+
+
+def test_login_state_detector_ignores_hidden_bad_credential_element() -> None:
+    detector = LoginStateDetector()
+    driver = FakeDriver(
+        elements={("id", "err_common"): [FakeElement("ID/PW 오류 메시지가 표시되었습니다.", displayed=False)]},
+        current_url="https://nid.naver.com/nidlogin.login",
+    )
+
+    assert detector.detect(driver).kind == "still_on_login"
 
 
 def test_validate_naver_mail_session_valid(monkeypatch) -> None:

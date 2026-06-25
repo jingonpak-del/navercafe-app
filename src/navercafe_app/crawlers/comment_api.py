@@ -134,8 +134,15 @@ def comments_from_api_payload(payload: Any) -> list[Comment]:
         if not text:
             continue
         author = _author_from_item(item)
-        written_at = _first_text(item, "createdAt", "createDate", "regDate", "writtenAt", "date")
-        is_reply = bool(item.get("parentCommentId") or item.get("refCommentId") or item.get("reply") or item.get("isReply"))
+        written_at = _first_text(item, "createdAt", "createDate", "regDate", "writtenAt", "date", "updateDate")
+        is_reply = bool(
+            item.get("parentCommentId")
+            or item.get("refCommentId")
+            or item.get("reply")
+            or item.get("isReply")
+            or item.get("isRef")
+            or (item.get("refId") and item.get("id") and item.get("refId") != item.get("id"))
+        )
         key = (author, text, written_at)
         if key in seen:
             continue
@@ -174,12 +181,12 @@ def _author_from_item(item: dict[str, Any]) -> str:
     for key in ("writer", "author", "user", "member"):
         value = item.get(key)
         if isinstance(value, dict):
-            found = _first_text(value, "nickName", "nickname", "name", "id", "memberId")
+            found = _first_text(value, "nick", "nickName", "nickname", "name", "id", "memberId")
             if found:
                 return found
         elif isinstance(value, str) and value.strip():
             return _clean_text(value)
-    return _first_text(item, "nickName", "nickname", "writerNick", "userName", "memberId")
+    return _first_text(item, "nick", "nickName", "nickname", "writerNick", "userName", "memberId")
 
 
 def _clean_text(text: str) -> str:
