@@ -59,10 +59,29 @@ GUI에서 가능한 일:
 - 시작/끝 페이지, 최대 글 수 제한
 - 목록만 테스트
 - 본문/사진 저장 실행
-- 로그인 쿠키 강제 갱신
+- 로그인 상태 확인
+- 로그인 쿠키 삭제/강제 갱신
 - 요청 간격 설정
+- 실행 결과 표 확인
+- 자주 쓰는 게시판 프리셋 저장/불러오기
 
-초기 MVP이므로 배포용 `.exe` 패키징은 다음 단계에서 PyInstaller 또는 briefcase로 묶으면 됩니다.
+프리셋은 기본적으로 `data/fe_board_archive_presets.json`에 저장됩니다. 로그인 쿠키는 기존 세션 관리 계층을 통해 `data/session/naver_cookies.json`에 저장되며 git에 커밋하면 안 됩니다.
+
+## Windows exe 패키징
+
+개발 PC에서 PyInstaller로 GUI 실행 파일을 만들 수 있습니다.
+
+```bash
+uv run --with pyinstaller python scripts/build_fe_board_archive_exe.py --clean
+```
+
+빌드 결과 예시:
+
+```text
+dist/fe_board_archive/NaverCafeBoardArchive/NaverCafeBoardArchive.exe
+```
+
+배포 시에는 위 폴더 전체를 압축해서 다른 PC로 옮기는 방식이 안전합니다. 다른 PC에도 Chrome이 설치되어 있어야 하며, 첫 실행 시 네이버 로그인/CAPTCHA/2FA는 사용자가 직접 완료해야 합니다.
 
 ## 저장 구조
 
