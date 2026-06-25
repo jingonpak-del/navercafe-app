@@ -98,6 +98,36 @@ def test_extract_blog_cafe_results_keeps_only_top_representative_per_result_card
     assert all("1952590" not in result.url and "1951533" not in result.url for result in results)
 
 
+def test_extract_blog_cafe_results_falls_back_to_non_card_view_results_when_power_cards_are_ads():
+    html = """
+    <html><body>
+      <section class="sc_new"><h2>파워컨텐츠</h2>
+        <div class="_fe_view_power_content">
+          <a href="https://example.com/ad">광고성 병원 페이지</a>
+        </div>
+      </section>
+      <section class="sc_new"><h2>블로그</h2>
+        <ul>
+          <li>
+            <a href="https://blog.naver.com/goodblog/111">요실금수술 블로그 대표글</a>
+            <a href="https://blog.naver.com/goodblog/111">본문 미리보기 중복 링크</a>
+          </li>
+          <li>
+            <a href="https://cafe.naver.com/goodcafe/222?art=tracking">요실금수술 카페 대표글</a>
+          </li>
+        </ul>
+      </section>
+    </body></html>
+    """
+
+    results = extract_blog_cafe_results_from_html(html)
+
+    assert [(r.content_type, r.url, r.title) for r in results] == [
+        ("blog", "https://blog.naver.com/goodblog/111", "요실금수술 블로그 대표글"),
+        ("cafe", "https://cafe.naver.com/goodcafe/222", "요실금수술 카페 대표글"),
+    ]
+
+
 def test_parse_blog_detail_html_smart_editor():
     html = """
     <html><body>

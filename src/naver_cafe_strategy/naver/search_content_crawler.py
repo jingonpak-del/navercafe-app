@@ -285,6 +285,7 @@ def extract_blog_cafe_results_from_html(html: str, *, max_items: int | None = No
     seen: set[str] = set()
 
     cards = _result_cards(soup)
+    card_ids = {id(card) for card in cards}
     if cards:
         for card in cards:
             item = _extract_first_item_from_result_card(card, rank=len(results) + 1)
@@ -294,10 +295,12 @@ def extract_blog_cafe_results_from_html(html: str, *, max_items: int | None = No
             seen.add(item.url)
             if max_items is not None and len(results) >= max_items:
                 break
-        return results
 
-    # 예전/테스트 HTML처럼 카드 식별자가 없을 때의 폴백: 링크 단위 추출.
+    # 카드 식별자가 없는 일반 VIEW/블로그/카페 섹션 폴백: 링크 단위 추출.
+    # 단, 이미 카드 단위로 처리한 영역 내부 링크는 추가글 과수집을 막기 위해 건너뜁니다.
     for anchor in soup.select("a[href]"):
+        if any(id(parent) in card_ids for parent in anchor.parents):
+            continue
         item = _build_search_content_item(anchor, rank=len(results) + 1)
         if item is None or item.url in seen:
             continue
