@@ -2,17 +2,32 @@ from __future__ import annotations
 
 import requests
 
-from navercafe_app.auth.naver_login import LoginStateDetector
-from navercafe_app.auth.naver_session import validate_naver_mail_session
+from navercafe_app.auth.naver_login import LoginStateDetector, _replace_text
+from navercafe_app.auth.naver_session import (
+    NaverSessionManager,
+    cookies_to_session,
+    validate_naver_cafe_session,
+    validate_naver_mail_session,
+)
 
 
 class FakeElement:
     def __init__(self, text: str = "", displayed: bool = True):
         self.text = text
         self._displayed = displayed
+        self.calls: list[str] = []
 
     def is_displayed(self) -> bool:
         return self._displayed
+
+    def click(self) -> None:
+        self.calls.append("click")
+
+    def clear(self) -> None:
+        self.calls.append("clear")
+
+    def send_keys(self, value) -> None:
+        self.calls.append(f"send_keys:{value}")
 
 
 class FakeDriver:
@@ -69,6 +84,23 @@ def test_login_state_detector_ignores_hidden_bad_credential_element() -> None:
     assert detector.detect(driver).kind == "still_on_login"
 
 
+def test_replace_text_auto_falls_back_to_send_keys_when_clipboard_unavailable(monkeypatch) -> None:
+    element = FakeElement()
+
+    def fail_import(name, *args, **kwargs):
+        if name == "pyperclip":
+            raise ImportError("missing")
+        return original_import(name, *args, **kwargs)
+
+    original_import = __import__
+    monkeypatch.setattr("builtins.__import__", fail_import)
+
+    _replace_text(element, "abc", input_method="auto")
+
+    assert "clear" in element.calls
+    assert "send_keys:abc" in element.calls
+
+
 def test_validate_naver_mail_session_valid(monkeypatch) -> None:
     session = requests.Session()
 
@@ -92,3 +124,54 @@ def test_validate_naver_mail_session_expired_redirect(monkeypatch) -> None:
     monkeypatch.setattr(session, "post", fake_post)
 
     assert validate_naver_mail_session(session).status == "expired"
+
+
+def test_validate_naver_cafe_session_valid(monkeypatch) -> None:
+    session = requests.Session()
+
+    def fake_get(*args, **kwargs):
+        return FakeResponse(payload={"message": {"status": "200"}})
+
+    monkeypatch.setattr(session, "get", fake_get)
+
+    result = validate_naver_cafe_session(session)
+
+    assert result.status == "valid"
+    assert result.is_valid is True
+
+
+def test_cookies_to_session_adds_cafe_headers() -> None:
+    session = cookies_to_session([{"name": "NID_AUT", "value": "x", "domain": ".naver.com"}])
+
+    assert session.cookies.get("NID_AUT") == "x"
+    assert session.headers["Referer"] == "https://cafe.naver.com/"
+    assert "Sec-Ch-Ua" in session.headers
+
+
+def test_session_manager_reads_login_stability_env(tmp_path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "\n".join(
+            [
+                "NAVER_ID=user",
+                "NAVER_PW=pass",
+                "NAVER_SESSION_KEY=key",
+                "NAVER_LOGIN_DRIVER=undetected",
+                "NAVER_LOGIN_INPUT_METHOD=clipboard",
+                "NAVER_KEEP_LOGIN=false",
+                "NAVER_USE_CURL_CFFI=false",
+                "NAVER_LOGIN_PROFILE_DIR=data/custom-profile",
+                "NAVER_LOGIN_WARMUP_URLS=https://cafe.naver.com/example,https://cafe.naver.com/f-e/cafes/1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    manager = NaverSessionManager(env_path=env_path)
+
+    assert manager.login_driver_mode == "undetected"
+    assert manager.login_input_method == "clipboard"
+    assert manager.keep_login is False
+    assert manager.prefer_curl_cffi is False
+    assert manager.login_profile_dir == "data/custom-profile"
+    assert manager.login_warmup_urls == ["https://cafe.naver.com/example", "https://cafe.naver.com/f-e/cafes/1"]

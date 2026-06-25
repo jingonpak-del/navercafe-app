@@ -6,6 +6,7 @@ from typing import Literal
 
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -98,12 +99,18 @@ def safe_naver_login(
     timeout: int = 20,
     manual_wait_seconds: int = 120,
     keep_login: bool = False,
+    input_method: Literal["auto", "clipboard", "send_keys"] = "auto",
 ) -> bool:
     """Perform a conservative, user-visible Naver login flow.
 
     This routine focuses on stability: explicit waits, clear state detection, optional manual
     challenge handling, and cookie-based success verification. It does not implement CAPTCHA
     solving, security-confirmation bypass, IP rotation, or bot-evasion mouse wandering.
+
+    ``input_method='clipboard'`` mirrors the older hotdeal crawler's login-stability pattern:
+    paste credentials into the official Naver login form instead of synthesizing each character.
+    If pyperclip is unavailable and ``input_method='auto'``, the function safely falls back to
+    Selenium ``send_keys``.
     """
 
     wait = WebDriverWait(driver, timeout)
@@ -116,8 +123,8 @@ def safe_naver_login(
     except TimeoutException:
         return False
 
-    _replace_text(id_input, username)
-    _replace_text(pw_input, password)
+    _replace_text(id_input, username, input_method=input_method)
+    _replace_text(pw_input, password, input_method=input_method)
 
     if keep_login:
         _click_if_present(driver, By.ID, "keep") or _click_if_present(driver, By.CSS_SELECTOR, "label[for='keep']")
@@ -156,10 +163,25 @@ def _wait_for_terminal_state(driver, detector: LoginStateDetector, *, timeout: i
     return last_state
 
 
-def _replace_text(element, text: str) -> None:
+def _replace_text(element, text: str, *, input_method: Literal["auto", "clipboard", "send_keys"] = "auto") -> None:
     element.click()
+    element.send_keys(Keys.CONTROL + "a")
+
+    if input_method in {"auto", "clipboard"}:
+        try:
+            import pyperclip
+
+            pyperclip.copy(text)
+            element.send_keys(Keys.CONTROL + "v")
+            time.sleep(0.4)
+            return
+        except Exception:
+            if input_method == "clipboard":
+                raise
+
     element.clear()
     element.send_keys(text)
+    time.sleep(0.2)
 
 
 def _click_if_present(driver, by: str, selector: str) -> bool:

@@ -91,13 +91,38 @@ finally:
 NAVER_ID=your_naver_id
 NAVER_PW=your_naver_password
 NAVER_SESSION_KEY=local_random_key
+# 선택: 기존 hotdeal crawler에서 검증한 로그인 안정화 옵션
+NAVER_LOGIN_DRIVER=selenium          # selenium 또는 undetected
+NAVER_LOGIN_INPUT_METHOD=auto        # auto, clipboard, send_keys
+NAVER_KEEP_LOGIN=true
+NAVER_USE_CURL_CFFI=true
+NAVER_LOGIN_PROFILE_DIR=data/chrome-profile/naver-login
+NAVER_LOGIN_WARMUP_URLS=https://cafe.naver.com/f-e/cafes/14793916/popular
 ```
 
 2. `config/cafe_targets.example.yaml`을 복사해 `config/cafe_targets.yaml`을 만들고 카페/게시판을 등록합니다.
    - 일반 게시판은 `menu_id`를 입력합니다.
    - 인기글 영역(`/f-e/cafes/{cafe_id}/popular`)은 `menu_id`가 없으므로 `type: popular`, `menu_id: ""`, `board_url: https://cafe.naver.com/f-e/cafes/{cafe_id}/popular` 형식으로 등록합니다.
 
-3. 최초 실행은 CAPTCHA/2FA 대응을 위해 브라우저를 보이게 실행하는 것을 권장합니다.
+3. 최초 쿠키 획득은 CAPTCHA/2FA 대응을 위해 브라우저를 보이게 실행하는 것을 권장합니다. Slack 안에서 네이버 보안 챌린지를 직접 조작하기 어렵다면 Hermes가 설치된 Windows PC에 원격데스크톱/크롬 원격 데스크톱/AnyDesk 등으로 접속한 뒤 아래 명령으로 열린 Chrome 창에서 직접 로그인하세요.
+
+```bash
+uv run python -m navercafe_app.cli.acquire_naver_session \
+  --env .env \
+  --driver selenium \
+  --input-method auto \
+  --profile-dir data/chrome-profile/naver-login \
+  --warmup-url https://cafe.naver.com/f-e/cafes/14793916/popular \
+  --force
+```
+
+`NAVER_LOGIN_DRIVER=undetected`를 쓰려면 선택 의존성을 설치합니다.
+
+```bash
+uv pip install undetected-chromedriver pyperclip curl-cffi
+```
+
+4. 쿠키가 저장된 뒤 일일 크롤러를 실행합니다.
 
 ```bash
 uv run python -m navercafe_app.cli.daily_crawl \
