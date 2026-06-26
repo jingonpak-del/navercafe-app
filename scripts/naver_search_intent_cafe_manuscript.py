@@ -21,6 +21,13 @@ from naver_cafe_strategy.naver.cafe_manuscript_generator import (
     manuscript_to_json_dict,
     manuscript_with_metadata_to_dict,
 )
+from naver_cafe_strategy.naver.llm_cafe_manuscript_generator import (
+    LLMGenerationConfig,
+    build_llm_prompt_bundle,
+    build_prompt_markdown,
+    generate_cafe_manuscript_with_llm,
+    prompt_bundle_to_dict,
+)
 from naver_cafe_strategy.naver.manuscript_brief_builder import (
     brief_to_dict,
     build_brief_markdown,
@@ -52,6 +59,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delay-seconds", type=float, default=1.0, help="상세 페이지 크롤링 간 대기 초")
     parser.add_argument("--show-browser", action="store_true", help="검색/크롤링 시 브라우저 표시")
     parser.add_argument("--generate", action="store_true", help="input-json 없이 네이버 검색/크롤링부터 수행")
+    parser.add_argument(
+        "--generation-mode",
+        choices=["rule", "prompt", "llm"],
+        default="rule",
+        help="원고 생성 방식: rule=기존 규칙 기반, prompt=LLM 프롬프트만 저장, llm=OpenAI 호환 API 호출",
+    )
+    parser.add_argument("--llm-model", default=None, help="LLM API 모델명. 기본값은 OPENAI_MODEL 또는 gpt-4o-mini")
+    parser.add_argument("--llm-base-url", default=None, help="OpenAI 호환 base URL. 기본값은 OPENAI_BASE_URL 또는 OpenAI")
+    parser.add_argument("--llm-api-key", default=None, help="LLM API 키. 미지정 시 OPENAI_API_KEY 사용")
+    parser.add_argument("--llm-temperature", type=float, default=0.7, help="LLM temperature")
+    parser.add_argument("--llm-max-tokens", type=int, default=1600, help="LLM max_tokens")
     return parser
 
 
@@ -96,7 +114,20 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Path]:
     morph = analyze_crawled_morphology(rows, keyword=args.keyword)
     intent = infer_search_intent(rows, morph)
     brief = build_manuscript_brief(keyword=args.keyword, morph=morph, intent=intent, seo=seo)
-    manuscript = generate_cafe_manuscript(brief)
+    prompt_bundle = build_llm_prompt_bundle(brief)
+    if args.generation_mode == "llm":
+        llm_config = LLMGenerationConfig.from_env(
+            model=args.llm_model,
+            base_url=args.llm_base_url,
+            api_key=args.llm_api_key,
+            temperature=args.llm_temperature,
+            max_tokens=args.llm_max_tokens,
+        )
+        manuscript = generate_cafe_manuscript_with_llm(brief, config=llm_config)
+        generator_mode = "llm"
+    else:
+        manuscript = generate_cafe_manuscript(brief)
+        generator_mode = "prompt_with_rule_preview" if args.generation_mode == "prompt" else "rule"
 
     paths = {
         "crawled_json": Path(crawled_path),
@@ -104,14 +135,24 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Path]:
         "intent_profile_json": _write_json(out_dir / f"{prefix}_intent_profile.json", intent_profile_to_dict(intent)),
         "manuscript_brief_json": _write_json(out_dir / f"{prefix}_manuscript_brief.json", brief_to_dict(brief)),
         "manuscript_brief_md": out_dir / f"{prefix}_manuscript_brief.md",
+        "llm_prompt_json": _write_json(out_dir / f"{prefix}_llm_prompt.json", prompt_bundle_to_dict(prompt_bundle)),
+        "llm_prompt_md": out_dir / f"{prefix}_llm_prompt.md",
         "generated_manuscript_json": _write_json(out_dir / f"{prefix}_generated_cafe_manuscript.json", manuscript_to_json_dict(manuscript)),
         "generated_manuscript_with_meta_json": _write_json(
             out_dir / f"{prefix}_generated_cafe_manuscript_with_meta.json",
-            manuscript_with_metadata_to_dict(manuscript),
+            {
+                **manuscript_with_metadata_to_dict(manuscript),
+                "generator_mode": generator_mode,
+                "prompt_artifacts": {
+                    "json": str(out_dir / f"{prefix}_llm_prompt.json"),
+                    "markdown": str(out_dir / f"{prefix}_llm_prompt.md"),
+                },
+            },
         ),
         "seo_analysis_json": _write_json(out_dir / f"{prefix}_seo_analysis_snapshot.json", asdict(seo)),
     }
     paths["manuscript_brief_md"].write_text(build_brief_markdown(brief), encoding="utf-8")
+    paths["llm_prompt_md"].write_text(build_prompt_markdown(prompt_bundle), encoding="utf-8")
     return paths
 
 
