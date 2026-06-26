@@ -74,7 +74,8 @@ def build_undetected_driver(
     except ImportError as exc:
         raise RuntimeError(
             "NAVER_LOGIN_DRIVER=undetected requires optional dependency 'undetected-chromedriver'. "
-            "Install with: uv pip install undetected-chromedriver pyperclip curl-cffi"
+            "Run with optional login dependencies: uv run --extra login python -m navercafe_app.cli.acquire_naver_session "
+            "or install them with: uv sync --extra login"
         ) from exc
 
     opts = uc.ChromeOptions()

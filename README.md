@@ -107,19 +107,19 @@ NAVER_LOGIN_WARMUP_URLS=https://cafe.naver.com/f-e/cafes/14793916/popular
 3. 최초 쿠키 획득은 CAPTCHA/2FA 대응을 위해 브라우저를 보이게 실행하는 것을 권장합니다. Slack 안에서 네이버 보안 챌린지를 직접 조작하기 어렵다면 Hermes가 설치된 Windows PC에 원격데스크톱/크롬 원격 데스크톱/AnyDesk 등으로 접속한 뒤 아래 명령으로 열린 Chrome 창에서 직접 로그인하세요.
 
 ```bash
-uv run python -m navercafe_app.cli.acquire_naver_session \
+uv run --extra login python -m navercafe_app.cli.acquire_naver_session \
   --env .env \
-  --driver selenium \
+  --driver undetected \
   --input-method auto \
   --profile-dir data/chrome-profile/naver-login \
   --warmup-url https://cafe.naver.com/f-e/cafes/14793916/popular \
   --force
 ```
 
-`NAVER_LOGIN_DRIVER=undetected`를 쓰려면 선택 의존성을 설치합니다.
+`NAVER_LOGIN_DRIVER=undetected`는 `--extra login`으로 실행하면 필요한 선택 의존성이 자동으로 프로젝트 `.venv`에 동기화됩니다. 수동 설치가 필요하면 아래처럼 실행합니다.
 
 ```bash
-uv pip install undetected-chromedriver pyperclip curl-cffi
+uv sync --extra login
 ```
 
 4. 쿠키가 저장된 뒤 일일 크롤러를 실행합니다.

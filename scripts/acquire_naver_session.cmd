@@ -9,7 +9,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-uv run python -m navercafe_app.cli.acquire_naver_session ^
+uv run --extra login python -m navercafe_app.cli.acquire_naver_session ^
   --env .env ^
   --driver undetected ^
   --input-method auto ^
