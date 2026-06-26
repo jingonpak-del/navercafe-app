@@ -83,6 +83,20 @@ dist/fe_board_archive/NaverCafeBoardArchive/NaverCafeBoardArchive.exe
 
 배포 시에는 위 폴더 전체를 압축해서 다른 PC로 옮기는 방식이 안전합니다. 다른 PC에도 Chrome이 설치되어 있어야 하며, 첫 실행 시 네이버 로그인/CAPTCHA/2FA는 사용자가 직접 완료해야 합니다.
 
+포터블 ZIP까지 한 번에 만들려면 다음 명령을 사용합니다.
+
+```bash
+uv run --with pyinstaller python scripts/package_fe_board_archive_release.py --clean
+```
+
+생성 결과:
+
+```text
+dist/fe_board_archive/NaverCafeBoardArchive_portable.zip
+```
+
+최종 사용자용 상세 안내는 `docs/fe_board_archive_user_guide.md`를 참고하세요.
+
 ## 저장 구조
 
 ```text
