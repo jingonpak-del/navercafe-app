@@ -7,9 +7,12 @@ from typing import Iterator
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from navercafe_app.browser_bundle import find_bundled_browser
 
 
 def build_driver(
@@ -17,15 +20,21 @@ def build_driver(
     disable_images: bool = True,
     timeout: int = 30,
     user_data_dir: str | None = None,
+    chrome_binary_path: str | None = None,
+    chromedriver_path: str | None = None,
 ) -> webdriver.Chrome:
     """Build a Chrome WebDriver configured for Naver Cafe crawling.
 
-    Selenium 4.6+ Selenium Manager resolves the ChromeDriver binary automatically.
-    For login-required cafes, use ``headless=False`` and complete login manually.
-    Pass ``user_data_dir`` for a persistent manual-login profile; otherwise a temporary profile
-    is used to avoid profile lock conflicts.
+    If a portable Chrome for Testing bundle exists under ``browsers/`` and ``drivers/``,
+    it is used automatically. Otherwise Selenium Manager falls back to the locally installed
+    Chrome/ChromeDriver discovery path.
     """
     opts = Options()
+    bundle = find_bundled_browser()
+    binary_path = chrome_binary_path or (str(bundle.chrome_binary) if bundle.chrome_binary else None)
+    driver_path = chromedriver_path or (str(bundle.chromedriver) if bundle.chromedriver else None)
+    if binary_path:
+        opts.binary_location = binary_path
     if headless:
         opts.add_argument("--headless=new")
         opts.add_argument("--window-size=1920,1080")
@@ -46,7 +55,8 @@ def build_driver(
         opts.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     opts.page_load_strategy = "eager"
 
-    driver = webdriver.Chrome(options=opts)
+    service = Service(executable_path=driver_path) if driver_path else None
+    driver = webdriver.Chrome(service=service, options=opts) if service else webdriver.Chrome(options=opts)
     _apply_driver_timeouts(driver, timeout)
     try:
         driver.execute_cdp_cmd(
@@ -63,11 +73,13 @@ def build_undetected_driver(
     disable_images: bool = False,
     timeout: int = 30,
     user_data_dir: str | None = None,
+    chrome_binary_path: str | None = None,
+    chromedriver_path: str | None = None,
 ) -> webdriver.Chrome:
     """Build an optional undetected-chromedriver instance for manual Naver login renewal.
 
-    This mirrors the user's older hotdeal crawler pattern but remains a normal user-visible
-    login flow: CAPTCHA/2FA/security challenges are still handled manually by the account owner.
+    CAPTCHA/2FA/security challenges are still handled manually by the account owner.
+    If a portable Chrome for Testing bundle exists, it is passed to undetected-chromedriver.
     """
     try:
         import undetected_chromedriver as uc
@@ -91,6 +103,13 @@ def build_undetected_driver(
         opts.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
 
     kwargs = {"options": opts}
+    bundle = find_bundled_browser()
+    binary_path = chrome_binary_path or (str(bundle.chrome_binary) if bundle.chrome_binary else None)
+    driver_path = chromedriver_path or (str(bundle.chromedriver) if bundle.chromedriver else None)
+    if binary_path:
+        kwargs["browser_executable_path"] = binary_path
+    if driver_path:
+        kwargs["driver_executable_path"] = driver_path
     chrome_major = _get_chrome_major_version()
     if chrome_major:
         kwargs["version_main"] = chrome_major
@@ -106,6 +125,8 @@ def build_login_driver(
     disable_images: bool = False,
     timeout: int = 30,
     user_data_dir: str | None = None,
+    chrome_binary_path: str | None = None,
+    chromedriver_path: str | None = None,
 ):
     mode = (mode or "selenium").lower()
     if mode in {"undetected", "uc", "undetected_chromedriver"}:
@@ -114,6 +135,8 @@ def build_login_driver(
             disable_images=disable_images,
             timeout=timeout,
             user_data_dir=user_data_dir,
+            chrome_binary_path=chrome_binary_path,
+            chromedriver_path=chromedriver_path,
         )
     if mode != "selenium":
         raise ValueError(f"Unsupported login driver mode: {mode}")
@@ -122,6 +145,8 @@ def build_login_driver(
         disable_images=disable_images,
         timeout=timeout,
         user_data_dir=user_data_dir,
+        chrome_binary_path=chrome_binary_path,
+        chromedriver_path=chromedriver_path,
     )
 
 

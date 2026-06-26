@@ -62,8 +62,7 @@ output/naver_cafe_archive/줌슐랭_리스트_14793916_1556/
 ## 다른 PC에서 필요한 것
 
 - Windows
-- Chrome 브라우저
 - 인터넷 연결
 - 대상 카페/게시판을 읽을 수 있는 네이버 계정
 
-포터블 ZIP에는 Python 런타임과 필요한 라이브러리가 함께 들어가므로 일반 사용자는 `uv`나 Python을 설치하지 않아도 됩니다.
+포터블 ZIP에는 Python 런타임, 필요한 라이브러리, Chrome for Testing, matching ChromeDriver가 함께 들어갑니다. 따라서 일반 사용자는 `uv`, Python, 일반 Chrome을 별도로 설치하지 않아도 됩니다.

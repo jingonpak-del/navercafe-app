@@ -17,13 +17,18 @@ README_TEXT = """Naver Cafe 게시판 아카이브 - 포터블 실행 안내
 =================================================
 
 1. 폴더 전체를 원하는 PC에 복사합니다.
-2. Chrome이 설치되어 있어야 합니다.
-3. NaverCafeBoardArchive.exe를 실행합니다.
-4. 목록만 테스트는 로그인 없이 가능합니다.
-5. 본문/사진 저장은 네이버 로그인이 필요합니다.
+2. NaverCafeBoardArchive.exe를 실행합니다.
+3. 목록만 테스트는 로그인 없이 가능합니다.
+4. 본문/사진 저장은 네이버 로그인이 필요합니다.
    - GUI의 '로그인 갱신' 버튼을 누릅니다.
+   - 프로그램에 포함된 Chrome for Testing 창이 열립니다.
    - 열린 Chrome에서 CAPTCHA/2FA가 나오면 직접 완료합니다.
    - 로그인 상태가 유효해지면 '목록만 테스트' 체크를 끄고 수집을 시작합니다.
+
+내장 브라우저
+-------------
+이 포터블 패키지에는 Chrome for Testing과 matching ChromeDriver가 포함되어 있습니다.
+따라서 대상 PC에 일반 Chrome이 설치되어 있지 않아도 로그인 갱신 창을 열 수 있습니다.
 
 저장 위치
 ---------
@@ -43,6 +48,18 @@ def run_build(clean: bool) -> None:
     if clean:
         cmd.append("--clean")
     subprocess.run(cmd, cwd=PROJECT_ROOT, check=True)
+
+
+def ensure_bundled_browser(app_dir: Path, *, channel: str, force: bool = False) -> None:
+    # Import after PyInstaller build so this script can also run with --skip-build.
+    sys.path.insert(0, str(PROJECT_ROOT / "src"))
+    from navercafe_app.browser_bundle import ensure_chrome_for_testing_bundle
+
+    paths = ensure_chrome_for_testing_bundle(app_dir, channel=channel, force=force)
+    if not paths.is_complete:
+        raise RuntimeError("Chrome for Testing/ChromeDriver bundle was not created correctly.")
+    print(f"bundled_chrome: {paths.chrome_binary}")
+    print(f"bundled_chromedriver: {paths.chromedriver}")
 
 
 def write_portable_files(app_dir: Path) -> None:
@@ -68,6 +85,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build a portable ZIP for the Naver Cafe board archive GUI.")
     parser.add_argument("--skip-build", action="store_true", help="Use an existing PyInstaller output folder.")
     parser.add_argument("--clean", action="store_true", help="Clean build/dist before rebuilding the exe.")
+    parser.add_argument("--no-browser-bundle", action="store_true", help="Do not include Chrome for Testing/ChromeDriver.")
+    parser.add_argument("--force-browser-download", action="store_true", help="Re-download Chrome for Testing assets.")
+    parser.add_argument("--browser-channel", default="Stable", help="Chrome for Testing channel: Stable/Beta/Dev/Canary.")
     args = parser.parse_args(argv)
 
     if not args.skip_build:
@@ -76,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"exe를 찾지 못했습니다: {EXE_PATH}")
         return 1
 
+    if not args.no_browser_bundle:
+        ensure_bundled_browser(APP_DIR, channel=args.browser_channel, force=args.force_browser_download)
     write_portable_files(APP_DIR)
     make_zip(APP_DIR, ZIP_PATH)
     print(f"portable_dir: {APP_DIR}")

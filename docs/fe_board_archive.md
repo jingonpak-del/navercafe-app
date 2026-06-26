@@ -81,7 +81,7 @@ uv run --with pyinstaller python scripts/build_fe_board_archive_exe.py --clean
 dist/fe_board_archive/NaverCafeBoardArchive/NaverCafeBoardArchive.exe
 ```
 
-배포 시에는 위 폴더 전체를 압축해서 다른 PC로 옮기는 방식이 안전합니다. 다른 PC에도 Chrome이 설치되어 있어야 하며, 첫 실행 시 네이버 로그인/CAPTCHA/2FA는 사용자가 직접 완료해야 합니다.
+배포 시에는 위 폴더 전체를 압축해서 다른 PC로 옮기는 방식이 안전합니다. 포터블 ZIP에는 Chrome for Testing과 matching ChromeDriver를 포함하므로, 대상 PC에 일반 Chrome이 설치되어 있지 않아도 로그인 갱신 창을 열 수 있습니다. 첫 실행 시 네이버 로그인/CAPTCHA/2FA는 사용자가 직접 완료해야 합니다.
 
 포터블 ZIP까지 한 번에 만들려면 다음 명령을 사용합니다.
 

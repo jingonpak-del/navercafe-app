@@ -230,6 +230,8 @@ class NaverSessionManager:
         self.prefer_curl_cffi = _env_bool(self.env.get("NAVER_USE_CURL_CFFI"), default=True)
         self.login_profile_dir = self.env.get("NAVER_LOGIN_PROFILE_DIR", "data/chrome-profile/naver-login")
         self.login_warmup_urls = _split_env_list(self.env.get("NAVER_LOGIN_WARMUP_URLS", ""))
+        self.chrome_binary_path = self.env.get("NAVER_CHROME_BINARY", "")
+        self.chromedriver_path = self.env.get("NAVER_CHROMEDRIVER", "")
         if driver_factory is build_driver:
             self.driver_factory = self._build_configured_driver
         else:
@@ -329,6 +331,8 @@ class NaverSessionManager:
             headless=headless,
             disable_images=headless,
             user_data_dir=self.login_profile_dir if not headless else None,
+            chrome_binary_path=self.chrome_binary_path or None,
+            chromedriver_path=self.chromedriver_path or None,
         )
 
     def _warm_up_login_context(self, driver) -> None:
