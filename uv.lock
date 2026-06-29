@@ -478,6 +478,7 @@ dependencies = [
     { name = "google-auth" },
     { name = "gspread" },
     { name = "kiwipiepy" },
+    { name = "pyperclip" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "selenium" },
@@ -495,7 +496,6 @@ excel = [
 ]
 login = [
     { name = "curl-cffi" },
-    { name = "pyperclip" },
     { name = "undetected-chromedriver" },
 ]
 
@@ -508,7 +508,7 @@ requires-dist = [
     { name = "kiwipiepy", specifier = ">=0.23.0" },
     { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.1" },
     { name = "pandas", marker = "extra == 'excel'", specifier = ">=2.0" },
-    { name = "pyperclip", marker = "extra == 'login'", specifier = ">=1.8" },
+    { name = "pyperclip", specifier = ">=1.8" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.31" },

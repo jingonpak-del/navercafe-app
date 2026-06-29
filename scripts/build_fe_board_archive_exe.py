@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
         str(DIST_DIR),
         "--workpath",
         str(BUILD_DIR),
+        "--hidden-import",
+        "pyperclip",
         "--paths",
         str(PROJECT_ROOT / "src"),
         str(ENTRY_SCRIPT),

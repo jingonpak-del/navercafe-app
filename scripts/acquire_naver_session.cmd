@@ -12,7 +12,7 @@ if errorlevel 1 (
 uv run --extra login python -m navercafe_app.cli.acquire_naver_session ^
   --env .env ^
   --driver selenium ^
-  --input-method auto ^
+  --input-method clipboard ^
   --profile-dir data/chrome-profile/naver-login ^
   --warmup-url https://cafe.naver.com/f-e/cafes/14793916/menus/1556?viewType=L ^
   --force

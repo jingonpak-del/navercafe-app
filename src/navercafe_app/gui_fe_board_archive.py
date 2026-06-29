@@ -23,7 +23,7 @@ NAVER_ID=
 NAVER_PW=
 NAVER_KEEP_LOGIN=true
 NAVER_LOGIN_DRIVER=selenium
-NAVER_LOGIN_INPUT_METHOD=auto
+NAVER_LOGIN_INPUT_METHOD=clipboard
 NAVER_USE_CURL_CFFI=true
 NAVER_LOGIN_PROFILE_DIR=data/chrome-profile/naver-login
 """
@@ -101,7 +101,7 @@ class FeBoardArchiveApp(tk.Tk):
                 "NAVER_PW": password,
                 "NAVER_KEEP_LOGIN": values.get("NAVER_KEEP_LOGIN", "true"),
                 "NAVER_LOGIN_DRIVER": values.get("NAVER_LOGIN_DRIVER", "selenium"),
-                "NAVER_LOGIN_INPUT_METHOD": values.get("NAVER_LOGIN_INPUT_METHOD", "auto"),
+                "NAVER_LOGIN_INPUT_METHOD": values.get("NAVER_LOGIN_INPUT_METHOD", "clipboard"),
                 "NAVER_USE_CURL_CFFI": values.get("NAVER_USE_CURL_CFFI", "true"),
                 "NAVER_LOGIN_PROFILE_DIR": values.get("NAVER_LOGIN_PROFILE_DIR", "data/chrome-profile/naver-login"),
             }

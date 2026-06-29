@@ -16,6 +16,7 @@ class FakeElement:
         self.text = text
         self._displayed = displayed
         self.calls: list[str] = []
+        self.value = ""
 
     def is_displayed(self) -> bool:
         return self._displayed
@@ -25,9 +26,17 @@ class FakeElement:
 
     def clear(self) -> None:
         self.calls.append("clear")
+        self.value = ""
 
     def send_keys(self, value) -> None:
         self.calls.append(f"send_keys:{value}")
+        if isinstance(value, str) and value not in {"\ue009a"}:
+            self.value = value
+
+    def get_attribute(self, name):
+        if name == "value":
+            return self.value
+        return None
 
 
 class FakeDriver:
@@ -86,6 +95,7 @@ def test_login_state_detector_ignores_hidden_bad_credential_element() -> None:
 
 def test_replace_text_auto_falls_back_to_send_keys_when_clipboard_unavailable(monkeypatch) -> None:
     element = FakeElement()
+    driver = FakeDriver()
 
     def fail_import(name, *args, **kwargs):
         if name == "pyperclip":
@@ -95,7 +105,7 @@ def test_replace_text_auto_falls_back_to_send_keys_when_clipboard_unavailable(mo
     original_import = __import__
     monkeypatch.setattr("builtins.__import__", fail_import)
 
-    _replace_text(element, "abc", input_method="auto")
+    _replace_text(driver, element, "abc", input_method="auto")
 
     assert "clear" in element.calls
     assert "send_keys:abc" in element.calls

@@ -99,7 +99,7 @@ def safe_naver_login(
     timeout: int = 20,
     manual_wait_seconds: int = 120,
     keep_login: bool = False,
-    input_method: Literal["auto", "clipboard", "send_keys"] = "auto",
+    input_method: Literal["auto", "clipboard", "send_keys", "js"] = "auto",
 ) -> bool:
     """Perform a conservative, user-visible Naver login flow.
 
@@ -109,8 +109,8 @@ def safe_naver_login(
 
     ``input_method='clipboard'`` mirrors the older hotdeal crawler's login-stability pattern:
     paste credentials into the official Naver login form instead of synthesizing each character.
-    If pyperclip is unavailable and ``input_method='auto'``, the function safely falls back to
-    Selenium ``send_keys``.
+    If pyperclip is unavailable and ``input_method='auto'``, the function falls back to Selenium
+    ``send_keys`` and finally to a DOM input-event fallback only when the field value is still empty.
     """
 
     wait = WebDriverWait(driver, timeout)
@@ -123,8 +123,8 @@ def safe_naver_login(
     except TimeoutException:
         return False
 
-    _replace_text(id_input, username, input_method=input_method)
-    _replace_text(pw_input, password, input_method=input_method)
+    _replace_text(driver, id_input, username, input_method=input_method)
+    _replace_text(driver, pw_input, password, input_method=input_method)
 
     if keep_login:
         _click_if_present(driver, By.ID, "keep") or _click_if_present(driver, By.CSS_SELECTOR, "label[for='keep']")
@@ -163,9 +163,19 @@ def _wait_for_terminal_state(driver, detector: LoginStateDetector, *, timeout: i
     return last_state
 
 
-def _replace_text(element, text: str, *, input_method: Literal["auto", "clipboard", "send_keys"] = "auto") -> None:
+def _replace_text(
+    driver,
+    element,
+    text: str,
+    *,
+    input_method: Literal["auto", "clipboard", "send_keys", "js"] = "auto",
+) -> None:
     element.click()
     element.send_keys(Keys.CONTROL + "a")
+
+    if input_method == "js":
+        _set_value_with_events(driver, element, text)
+        return
 
     if input_method in {"auto", "clipboard"}:
         try:
@@ -174,7 +184,8 @@ def _replace_text(element, text: str, *, input_method: Literal["auto", "clipboar
             pyperclip.copy(text)
             element.send_keys(Keys.CONTROL + "v")
             time.sleep(0.4)
-            return
+            if _element_value(element):
+                return
         except Exception:
             if input_method == "clipboard":
                 raise
@@ -182,8 +193,33 @@ def _replace_text(element, text: str, *, input_method: Literal["auto", "clipboar
     element.clear()
     element.send_keys(text)
     time.sleep(0.2)
+    if input_method == "auto" and not _element_value(element):
+        _set_value_with_events(driver, element, text)
 
 
+def _element_value(element) -> str:
+    try:
+        return str(element.get_attribute("value") or "")
+    except Exception:
+        return ""
+
+
+def _set_value_with_events(driver, element, text: str) -> None:
+    driver.execute_script(
+        """
+        const el = arguments[0];
+        const value = arguments[1];
+        el.focus();
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.value = value;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        """,
+        element,
+        text,
+    )
+    time.sleep(0.2)
 def _click_if_present(driver, by: str, selector: str) -> bool:
     elements = driver.find_elements(by, selector)
     if not elements:
