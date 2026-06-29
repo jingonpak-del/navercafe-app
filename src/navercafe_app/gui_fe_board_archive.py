@@ -9,12 +9,24 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Any
 
-from navercafe_app.auth.naver_session import NaverSessionManager, cookies_to_session
+from navercafe_app.auth.naver_session import NaverSessionManager, cookies_to_session, load_env_file
 from navercafe_app.crawlers.fe_board_archive import archive_board, parse_board_url
 
 DEFAULT_URL = "https://cafe.naver.com/f-e/cafes/14793916/menus/1556?viewType=L"
 DEFAULT_PRESET_PATH = Path("data/fe_board_archive_presets.json")
 DEFAULT_COOKIE_PATH = Path("data/session/naver_cookies.json")
+DEFAULT_ENV_PATH = Path(".env")
+ENV_SAMPLE_TEXT = """# Naver Cafe 게시판 아카이브 로그인 설정
+# 프로그램의 '계정 저장' 버튼을 누르면 NAVER_ID/NAVER_PW가 자동으로 채워집니다.
+# 다른 PC에 처음 가져간 경우 이 파일을 직접 수정하거나 프로그램 화면에서 입력하세요.
+NAVER_ID=
+NAVER_PW=
+NAVER_KEEP_LOGIN=true
+NAVER_LOGIN_DRIVER=selenium
+NAVER_LOGIN_INPUT_METHOD=auto
+NAVER_USE_CURL_CFFI=true
+NAVER_LOGIN_PROFILE_DIR=data/chrome-profile/naver-login
+"""
 
 
 class PresetStore:
@@ -55,12 +67,79 @@ class FeBoardArchiveApp(tk.Tk):
         self.resizable(True, True)
         self.messages: queue.Queue[tuple[str, Any]] = queue.Queue()
         self.worker: threading.Thread | None = None
+        self._ensure_env_sample()
+        self.env_values = load_env_file(DEFAULT_ENV_PATH)
+        self.naver_id_var = tk.StringVar(value=self.env_values.get("NAVER_ID", ""))
+        self.naver_pw_var = tk.StringVar(value=self.env_values.get("NAVER_PW", ""))
+        self.save_credentials_var = tk.BooleanVar(value=False)
         self.preset_store = PresetStore()
         self.presets: list[dict[str, Any]] = self.preset_store.load()
         self._build_ui()
         self._refresh_preset_names()
         self.after(200, self._drain_messages)
         self.after(400, self._check_login_status_async)
+
+    def _ensure_env_sample(self) -> None:
+        """Create a local .env template so a copied portable folder is self-explanatory."""
+        if DEFAULT_ENV_PATH.exists():
+            return
+        DEFAULT_ENV_PATH.write_text(ENV_SAMPLE_TEXT, encoding="utf-8")
+
+    def _credential_values(self) -> tuple[str, str]:
+        return self.naver_id_var.get().strip(), self.naver_pw_var.get().strip()
+
+    def _save_credentials_to_env(self, *, quiet: bool = False) -> bool:
+        username, password = self._credential_values()
+        if not username or not password:
+            if not quiet:
+                messagebox.showerror("계정 저장 오류", "네이버 ID와 비밀번호를 모두 입력하세요.")
+            return False
+        values = load_env_file(DEFAULT_ENV_PATH)
+        values.update(
+            {
+                "NAVER_ID": username,
+                "NAVER_PW": password,
+                "NAVER_KEEP_LOGIN": values.get("NAVER_KEEP_LOGIN", "true"),
+                "NAVER_LOGIN_DRIVER": values.get("NAVER_LOGIN_DRIVER", "selenium"),
+                "NAVER_LOGIN_INPUT_METHOD": values.get("NAVER_LOGIN_INPUT_METHOD", "auto"),
+                "NAVER_USE_CURL_CFFI": values.get("NAVER_USE_CURL_CFFI", "true"),
+                "NAVER_LOGIN_PROFILE_DIR": values.get("NAVER_LOGIN_PROFILE_DIR", "data/chrome-profile/naver-login"),
+            }
+        )
+        lines = [
+            "# Naver Cafe 게시판 아카이브 로그인 설정",
+            "# 이 파일은 포터블 폴더 안에만 저장됩니다. 다른 사람에게 공유하지 마세요.",
+        ]
+        for key in [
+            "NAVER_ID",
+            "NAVER_PW",
+            "NAVER_KEEP_LOGIN",
+            "NAVER_LOGIN_DRIVER",
+            "NAVER_LOGIN_INPUT_METHOD",
+            "NAVER_USE_CURL_CFFI",
+            "NAVER_LOGIN_PROFILE_DIR",
+        ]:
+            lines.append(f"{key}={values.get(key, '')}")
+        DEFAULT_ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self.env_values = values
+        if not quiet:
+            messagebox.showinfo("계정 저장", f"네이버 계정을 {DEFAULT_ENV_PATH}에 저장했습니다.")
+            self._log(f"계정 저장 완료: {DEFAULT_ENV_PATH}")
+        return True
+
+    def _clear_saved_credentials(self) -> None:
+        values = load_env_file(DEFAULT_ENV_PATH)
+        values["NAVER_ID"] = ""
+        values["NAVER_PW"] = ""
+        lines = ENV_SAMPLE_TEXT.splitlines()
+        extra = {k: v for k, v in values.items() if k not in {"NAVER_ID", "NAVER_PW"}}
+        for key, value in extra.items():
+            if key.startswith("NAVER_") and f"{key}=" not in "\n".join(lines):
+                lines.append(f"{key}={value}")
+        DEFAULT_ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self.naver_id_var.set("")
+        self.naver_pw_var.set("")
+        self._log("저장된 네이버 ID/PW를 .env에서 비웠습니다.")
 
     def _build_ui(self) -> None:
         frame = ttk.Frame(self, padding=14)
@@ -99,6 +178,23 @@ class FeBoardArchiveApp(tk.Tk):
         ttk.Button(session_box, text="로그인 상태 확인", command=self._check_login_status_async).grid(row=0, column=2, padx=(8, 0))
         ttk.Button(session_box, text="쿠키 삭제", command=self._clear_cookies).grid(row=0, column=3, padx=(8, 0))
         ttk.Button(session_box, text="로그인 갱신", command=self._refresh_login_async).grid(row=0, column=4, padx=(8, 0))
+        ttk.Label(session_box, text="네이버 ID").grid(row=1, column=0, sticky="w", pady=(8, 0))
+        ttk.Entry(session_box, textvariable=self.naver_id_var, width=28).grid(
+            row=1, column=1, columnspan=2, sticky="ew", pady=(8, 0)
+        )
+        ttk.Label(session_box, text="비밀번호").grid(row=2, column=0, sticky="w", pady=(6, 0))
+        ttk.Entry(session_box, textvariable=self.naver_pw_var, show="*", width=28).grid(
+            row=2, column=1, columnspan=2, sticky="ew", pady=(6, 0)
+        )
+        ttk.Checkbutton(session_box, text="실행 전 .env에 저장", variable=self.save_credentials_var).grid(
+            row=1, column=3, sticky="w", padx=(8, 0), pady=(8, 0)
+        )
+        ttk.Button(session_box, text="계정 저장", command=self._save_credentials_to_env).grid(
+            row=1, column=4, sticky="ew", padx=(8, 0), pady=(8, 0)
+        )
+        ttk.Button(session_box, text="저장 ID/PW 비우기", command=self._clear_saved_credentials).grid(
+            row=2, column=3, columnspan=2, sticky="ew", padx=(8, 0), pady=(6, 0)
+        )
 
         options = ttk.LabelFrame(frame, text="실행 옵션", padding=10)
         options.grid(row=5, column=0, columnspan=3, sticky="ew", pady=8)
@@ -239,7 +335,14 @@ class FeBoardArchiveApp(tk.Tk):
         self._log(f"프리셋 불러오기: {selected}")
 
     def _manager(self) -> NaverSessionManager:
-        return NaverSessionManager(env_path=".env")
+        if self.save_credentials_var.get():
+            self._save_credentials_to_env(quiet=True)
+        username, password = self._credential_values()
+        return NaverSessionManager(
+            env_path=DEFAULT_ENV_PATH,
+            username=username or None,
+            password=password or None,
+        )
 
     def _check_login_status_async(self) -> None:
         threading.Thread(target=self._check_login_status_worker, daemon=True).start()

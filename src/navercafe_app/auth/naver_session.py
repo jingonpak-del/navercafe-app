@@ -217,11 +217,13 @@ class NaverSessionManager:
         driver_factory: Callable[..., object] = build_driver,
         login_func: Callable[[object, str, str], bool] | None = None,
         user_agent: str = DEFAULT_USER_AGENT,
+        username: str | None = None,
+        password: str | None = None,
     ):
         self.env_path = Path(env_path) if env_path else None
         self.env = {**load_env_file(self.env_path), **os.environ}
-        self.username = self.env.get("NAVER_ID", "")
-        self.password = self.env.get("NAVER_PW", "")
+        self.username = username if username is not None else self.env.get("NAVER_ID", "")
+        self.password = password if password is not None else self.env.get("NAVER_PW", "")
         session_key = self.env.get("NAVER_SESSION_KEY", "")
         self.session_store = session_store or SessionStore("data/session/naver_cookies.json", session_key)
         self.login_driver_mode = self.env.get("NAVER_LOGIN_DRIVER", "selenium")
@@ -272,7 +274,11 @@ class NaverSessionManager:
                     return AuthState(True, "cookie", "저장된 쿠키로 로그인 상태를 확인했습니다.")
 
         if not self.username or not self.password:
-            return AuthState(False, "missing_credentials", "NAVER_ID/NAVER_PW가 .env 또는 환경변수에 없습니다.")
+            return AuthState(
+                False,
+                "missing_credentials",
+                "네이버 ID/PW가 입력되지 않았습니다. 프로그램 화면에서 입력하거나 포터블 폴더의 .env에 NAVER_ID/NAVER_PW를 채우세요.",
+            )
 
         driver = existing_driver or self.driver_factory(headless=headless)
         should_quit = existing_driver is None

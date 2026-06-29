@@ -52,3 +52,23 @@ def test_naver_session_manager_logs_in_and_saves_cookies(tmp_path):
     assert state.logged_in
     assert state.source == "selenium"
     assert store.load_cookies()[0]["name"] == "NID_AUT"
+
+
+def test_naver_session_manager_accepts_gui_credential_overrides(tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("NAVER_ID=\nNAVER_PW=\nNAVER_SESSION_KEY=k\n", encoding="utf-8")
+    store = SessionStore(tmp_path / "cookies.json", encryption_key="k")
+
+    manager = NaverSessionManager(
+        env_path=env,
+        session_store=store,
+        driver_factory=lambda **kwargs: FakeDriver(),
+        login_func=lambda driver, username, password: username == "screen-user" and password == "screen-pass",
+        username="screen-user",
+        password="screen-pass",
+    )
+
+    state = manager.ensure_login(force_login=True)
+
+    assert state.logged_in
+    assert store.load_cookies()[0]["name"] == "NID_AUT"

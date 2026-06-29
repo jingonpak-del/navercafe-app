@@ -20,6 +20,9 @@ README_TEXT = """Naver Cafe 게시판 아카이브 - 포터블 실행 안내
 2. NaverCafeBoardArchive.exe를 실행합니다.
 3. 목록만 테스트는 로그인 없이 가능합니다.
 4. 본문/사진 저장은 네이버 로그인이 필요합니다.
+   - 프로그램 화면의 '네이버 ID'와 '비밀번호' 칸에 입력합니다.
+   - 매번 입력하기 싫으면 '계정 저장' 또는 '실행 전 .env에 저장'을 사용합니다.
+   - 또는 폴더 안의 .env.sample을 .env로 복사해서 NAVER_ID/NAVER_PW를 직접 채워도 됩니다.
    - GUI의 '로그인 갱신' 버튼을 누릅니다.
    - 프로그램에 포함된 Chrome for Testing 창이 열립니다.
    - 열린 Chrome에서 CAPTCHA/2FA가 나오면 직접 완료합니다.
@@ -40,6 +43,18 @@ README_TEXT = """Naver Cafe 게시판 아카이브 - 포터블 실행 안내
 ----
 - data/ 폴더에는 로그인 쿠키가 저장될 수 있으므로 다른 사람에게 공유하지 마세요.
 - 카페/네이버 정책과 저작권/개인정보 보호 기준을 지켜 내부 보관 목적으로만 사용하세요.
+"""
+
+ENV_SAMPLE_TEXT = """# Naver Cafe 게시판 아카이브 로그인 설정
+# 프로그램 화면에서 입력 후 '계정 저장'을 누르면 NAVER_ID/NAVER_PW가 자동으로 채워집니다.
+# 직접 수정하려면 아래 두 줄을 채우고 파일명을 .env로 바꾸세요.
+NAVER_ID=
+NAVER_PW=
+NAVER_KEEP_LOGIN=true
+NAVER_LOGIN_DRIVER=selenium
+NAVER_LOGIN_INPUT_METHOD=auto
+NAVER_USE_CURL_CFFI=true
+NAVER_LOGIN_PROFILE_DIR=data/chrome-profile/naver-login
 """
 
 
@@ -64,6 +79,10 @@ def ensure_bundled_browser(app_dir: Path, *, channel: str, force: bool = False) 
 
 def write_portable_files(app_dir: Path) -> None:
     (app_dir / "README_FIRST.txt").write_text(README_TEXT, encoding="utf-8")
+    (app_dir / ".env.sample").write_text(ENV_SAMPLE_TEXT, encoding="utf-8")
+    env_path = app_dir / ".env"
+    if not env_path.exists():
+        env_path.write_text(ENV_SAMPLE_TEXT, encoding="utf-8")
     (app_dir / "start.cmd").write_text(
         '@echo off\r\ncd /d "%~dp0"\r\nstart "" "NaverCafeBoardArchive.exe"\r\n',
         encoding="utf-8",
