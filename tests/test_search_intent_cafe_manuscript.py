@@ -6,6 +6,11 @@ from naver_cafe_strategy.naver.llm_cafe_manuscript_generator import (
     parse_llm_manuscript_response,
 )
 from naver_cafe_strategy.naver.manuscript_brief_builder import build_manuscript_brief
+from naver_cafe_strategy.naver.manuscript_quality_evaluator import (
+    build_quality_report_markdown,
+    evaluate_generated_manuscript,
+    generate_with_quality_loop,
+)
 from naver_cafe_strategy.naver.morphological_analyzer import analyze_crawled_morphology
 from naver_cafe_strategy.naver.search_content_crawler import CrawledContent
 from naver_cafe_strategy.naver.search_intent_analyzer import infer_search_intent
@@ -109,3 +114,53 @@ def test_generate_with_llm_uses_injected_chat_caller():
     assert manuscript.Title == "소음순수술 알아보면서 헷갈렸던 부분"
     assert "개인차" in manuscript.Content
     assert "\\t" in manuscript.Comment
+
+
+def test_quality_evaluator_flags_forbidden_and_keyword_overuse():
+    brief = _brief()
+    manuscript = parse_llm_manuscript_response(
+        '{"Title":"소음순수술 소음순수술 추천 병원",'
+        '"Content":"소음순수술은 무조건 좋아요. 소음순수술 소음순수술 소음순수술 지금 예약하세요.",'
+        '"Comment":"계정1|댓글"}',
+        brief,
+    )
+
+    report = evaluate_generated_manuscript(manuscript, brief)
+    markdown = build_quality_report_markdown(report)
+
+    assert not report.passed
+    assert any(check.name == "forbidden_patterns" and not check.passed for check in report.checks)
+    assert any(check.name == "keyword_count" and not check.passed for check in report.checks)
+    assert "수정 필요" in markdown
+
+
+def test_quality_loop_retries_with_feedback_until_passes():
+    brief = _brief()
+    calls = []
+
+    def fake_chat_caller(bundle, config):
+        calls.append(bundle.user)
+        if len(calls) == 1:
+            return (
+                '{"Title":"소음순수술 소음순수술 추천 병원",'
+                '"Content":"소음순수술은 무조건 좋아요. 지금 예약하세요.",'
+                '"Comment":"계정1|댓글"}'
+            )
+        return (
+            '{"Title":"소음순수술 알아보며 확인한 기준",'
+            '"Content":"처음 알아볼 때는 불편이랑 상담 기준이 제일 궁금했어요.\\n\\n후기를 보다 보니 통증이나 회복은 개인차가 크겠더라고요.\\n\\n그래서 저는 설명이 구체적인지, 이후 관리가 어떻게 되는지까지 같이 확인하면 좋겠다고 느꼈어요.",'
+            '"Comment":"계정1|저도 상담 기준 봤어요 \\\\t작성자[답글]|감사해요 참고할게요 \\\\t계정2|개인차도 꼭 확인해보세요"}'
+        )
+
+    result = generate_with_quality_loop(
+        brief,
+        config=LLMGenerationConfig(model="test-model", api_key="test-key"),
+        chat_caller=fake_chat_caller,
+        max_revisions=1,
+    )
+
+    assert len(calls) == 2
+    assert "이전 원고 QA 피드백" in calls[1]
+    assert result.attempts == 2
+    assert result.report.passed
+    assert "개인차" in result.manuscript.Content

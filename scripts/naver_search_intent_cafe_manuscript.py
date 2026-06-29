@@ -23,10 +23,17 @@ from naver_cafe_strategy.naver.cafe_manuscript_generator import (
 )
 from naver_cafe_strategy.naver.llm_cafe_manuscript_generator import (
     LLMGenerationConfig,
+    _call_openai_compatible_chat,
     build_llm_prompt_bundle,
     build_prompt_markdown,
     generate_cafe_manuscript_with_llm,
     prompt_bundle_to_dict,
+)
+from naver_cafe_strategy.naver.manuscript_quality_evaluator import (
+    build_quality_report_markdown,
+    evaluate_generated_manuscript,
+    generate_with_quality_loop,
+    quality_report_to_dict,
 )
 from naver_cafe_strategy.naver.manuscript_brief_builder import (
     brief_to_dict,
@@ -70,6 +77,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--llm-api-key", default=None, help="LLM API 키. 미지정 시 OPENAI_API_KEY 사용")
     parser.add_argument("--llm-temperature", type=float, default=0.7, help="LLM temperature")
     parser.add_argument("--llm-max-tokens", type=int, default=1600, help="LLM max_tokens")
+    parser.add_argument("--qa-threshold", type=float, default=0.8, help="생성 원고 품질 평가 통과 기준")
+    parser.add_argument("--llm-max-revisions", type=int, default=0, help="LLM 모드에서 QA 실패 시 재생성 최대 횟수")
     return parser
 
 
@@ -123,10 +132,24 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Path]:
             temperature=args.llm_temperature,
             max_tokens=args.llm_max_tokens,
         )
-        manuscript = generate_cafe_manuscript_with_llm(brief, config=llm_config)
-        generator_mode = "llm"
+        if args.llm_max_revisions > 0:
+            loop_result = generate_with_quality_loop(
+                brief,
+                config=llm_config,
+                chat_caller=_call_openai_compatible_chat,
+                threshold=args.qa_threshold,
+                max_revisions=args.llm_max_revisions,
+            )
+            manuscript = loop_result.manuscript
+            quality_report = loop_result.report
+            generator_mode = "llm_quality_loop"
+        else:
+            manuscript = generate_cafe_manuscript_with_llm(brief, config=llm_config)
+            quality_report = evaluate_generated_manuscript(manuscript, brief, threshold=args.qa_threshold)
+            generator_mode = "llm"
     else:
         manuscript = generate_cafe_manuscript(brief)
+        quality_report = evaluate_generated_manuscript(manuscript, brief, threshold=args.qa_threshold)
         generator_mode = "prompt_with_rule_preview" if args.generation_mode == "prompt" else "rule"
 
     paths = {
@@ -138,11 +161,19 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Path]:
         "llm_prompt_json": _write_json(out_dir / f"{prefix}_llm_prompt.json", prompt_bundle_to_dict(prompt_bundle)),
         "llm_prompt_md": out_dir / f"{prefix}_llm_prompt.md",
         "generated_manuscript_json": _write_json(out_dir / f"{prefix}_generated_cafe_manuscript.json", manuscript_to_json_dict(manuscript)),
+        "quality_report_json": _write_json(out_dir / f"{prefix}_quality_report.json", quality_report_to_dict(quality_report)),
+        "quality_report_md": out_dir / f"{prefix}_quality_report.md",
         "generated_manuscript_with_meta_json": _write_json(
             out_dir / f"{prefix}_generated_cafe_manuscript_with_meta.json",
             {
                 **manuscript_with_metadata_to_dict(manuscript),
                 "generator_mode": generator_mode,
+                "quality": {
+                    "passed": quality_report.passed,
+                    "score": quality_report.score,
+                    "threshold": quality_report.threshold,
+                    "issues": quality_report.issues,
+                },
                 "prompt_artifacts": {
                     "json": str(out_dir / f"{prefix}_llm_prompt.json"),
                     "markdown": str(out_dir / f"{prefix}_llm_prompt.md"),
@@ -153,6 +184,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Path]:
     }
     paths["manuscript_brief_md"].write_text(build_brief_markdown(brief), encoding="utf-8")
     paths["llm_prompt_md"].write_text(build_prompt_markdown(prompt_bundle), encoding="utf-8")
+    paths["quality_report_md"].write_text(build_quality_report_markdown(quality_report), encoding="utf-8")
     return paths
 
 
