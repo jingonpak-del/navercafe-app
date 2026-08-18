@@ -361,6 +361,39 @@ def collect_cafe_results_across_search_surfaces(
     return results
 
 
+def crawl_cafe_evidence_corpus(
+    driver,
+    keyword: str,
+    *,
+    pages: int = 10,
+    timeout: int = 10,
+    delay_seconds: float = 1.0,
+    max_items: int | None = None,
+) -> list[CrawledContent]:
+    """Cafe-only 검색 증거 후보를 상세 수집하고 검색 출처를 보존합니다.
+
+    이 결과는 지정 검색 표면/페이지에서 노출된 표본입니다. 비공개·로그인 필요 글은
+    빈 본문과 오류를 그대로 남겨 접근 실패를 분석 성공으로 오인하지 않습니다.
+    """
+    items = collect_cafe_results_across_search_surfaces(
+        driver,
+        keyword,
+        pages=pages,
+        timeout=timeout,
+        delay_seconds=min(delay_seconds, 0.5),
+        max_items=max_items,
+    )
+    rows: list[CrawledContent] = []
+    for item in items:
+        row = crawl_detail(driver, item, timeout=timeout + 2)
+        row.meta["search_source"] = item.source
+        row.meta["search_page"] = item.source.rsplit("=", 1)[-1]
+        rows.append(row)
+        if delay_seconds > 0:
+            time.sleep(delay_seconds)
+    return rows
+
+
 def _switch_to_first_content_frame(driver, timeout: int = 8) -> bool:
     """블로그/카페 본문 iframe(mainFrame/cafe_main)이 있으면 진입합니다."""
 
