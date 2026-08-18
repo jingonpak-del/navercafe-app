@@ -1,0 +1,38 @@
+[
+  {
+    "content_type": "cafe",
+    "url": "https://cafe.naver.com/example/1",
+    "title": "무선청소기 가격과 관리 기준이 궁금해요",
+    "body": "무선청소기를 알아보는데 가격 차이가 커서 고민입니다. 필터와 먼지통 관리는 얼마나 편한지, 구매 전에 어떤 기준으로 비교하면 좋을지 궁금해요.",
+    "search_title": "",
+    "search_snippet": "",
+    "rank": 1,
+    "ok": true,
+    "error": "",
+    "meta": {}
+  },
+  {
+    "content_type": "cafe",
+    "url": "https://cafe.naver.com/example/2",
+    "title": "무선청소기 사용 후 관리가 번거로운가요",
+    "body": "필터 청소와 먼지통 관리가 실제로 불편한지 궁금합니다. 사용 중 소음이나 배터리도 같이 비교해보신 분들의 기준을 알고 싶어요.",
+    "search_title": "",
+    "search_snippet": "",
+    "rank": 2,
+    "ok": true,
+    "error": "",
+    "meta": {}
+  },
+  {
+    "content_type": "cafe",
+    "url": "https://cafe.naver.com/example/3",
+    "title": "무선청소기 공동구매 최저가",
+    "body": "광고 체험단 공구 진행합니다. 구매링크 문의주세요.",
+    "search_title": "",
+    "search_snippet": "",
+    "rank": 3,
+    "ok": true,
+    "error": "",
+    "meta": {}
+  }
+]

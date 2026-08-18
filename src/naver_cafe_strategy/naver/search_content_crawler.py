@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 import csv
 import json
 import re
@@ -77,10 +77,15 @@ class CrawledContent:
     meta: dict[str, str | int] = field(default_factory=dict)
 
 
-def build_search_url(keyword: str) -> str:
-    """네이버 통합검색 URL을 생성합니다."""
+def build_search_url(keyword: str, *, where: str = "nexearch", start: int = 1) -> str:
+    """네이버 검색 URL을 생성합니다.
 
-    return _SEARCH_URL.format(query=quote_plus(keyword))
+    ``where=nexearch`` 는 통합검색, ``where=article`` 은 카페 탭을 뜻합니다.
+    ``start`` 는 네이버가 사용하는 1-based 결과 offset입니다.
+    """
+
+    query = quote_plus(keyword)
+    return f"https://search.naver.com/search.naver?where={where}&query={query}&start={max(1, start)}"
 
 
 def search_from_naver_home(driver, keyword: str, timeout: int = 10) -> None:
@@ -317,6 +322,43 @@ def collect_blog_cafe_search_results(driver, keyword: str, *, timeout: int = 10,
 
     search_from_naver_home(driver, keyword, timeout=timeout)
     return extract_blog_cafe_results_from_html(driver.page_source, max_items=max_items)
+
+
+def collect_cafe_results_across_search_surfaces(
+    driver,
+    keyword: str,
+    *,
+    pages: int = 10,
+    timeout: int = 10,
+    delay_seconds: float = 0.4,
+    max_items: int | None = None,
+) -> list[SearchContentItem]:
+    """통합검색과 카페 탭의 지정 페이지에서 공개 카페 결과 후보를 수집합니다.
+
+    검색 DOM/페이지네이션은 자주 바뀌므로 이 함수는 결과 URL의 출처와 페이지를
+    ``source`` 에 기록하고, 상세 접근 실패 여부는 이후 ``crawl_detail`` 에 맡깁니다.
+    반환값은 검색에 실제 노출된 후보이지 카페 전체 게시물의 완전한 목록이 아닙니다.
+    """
+
+    if pages < 1:
+        raise ValueError("pages는 1 이상이어야 합니다.")
+
+    results: list[SearchContentItem] = []
+    seen: set[str] = set()
+    for where, surface in (("nexearch", "integrated"), ("article", "cafe_tab")):
+        for page in range(1, pages + 1):
+            start = (page - 1) * 10 + 1
+            driver.get(build_search_url(keyword, where=where, start=start))
+            WebDriverWait(driver, timeout).until(lambda d: d.find_elements(By.CSS_SELECTOR, "body a[href]"))
+            time.sleep(delay_seconds)
+            for item in extract_blog_cafe_results_from_html(driver.page_source):
+                if item.content_type != "cafe" or item.url in seen:
+                    continue
+                results.append(replace(item, source=f"{surface}:page={page}", rank=len(results) + 1))
+                seen.add(item.url)
+                if max_items is not None and len(results) >= max_items:
+                    return results
+    return results
 
 
 def _switch_to_first_content_frame(driver, timeout: int = 8) -> bool:
